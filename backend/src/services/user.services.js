@@ -79,9 +79,11 @@ const userSignup = async (registrationData) => {
     verificationTokenExpire,
   });
 
-  sendVerificationEmail(email, username, verificationToken).catch((err) =>
-    console.error("Failed to send verification email:", err.message),
-  );
+  sendVerificationEmail(email, username, verificationToken)
+    .then(() => console.log("Verification email sent to:", email))
+    .catch((err) =>
+      console.error("Failed to send verification email:", err.message, err.code),
+    );
 
   const token = user.createJWT();
 
