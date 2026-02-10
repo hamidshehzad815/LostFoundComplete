@@ -1,0 +1,234 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&display=swap");
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  
+  --black: #000000;
+  --white: #ffffff;
+
+  
+  --yellow: #facc15;
+  --pink: #ec4899;
+  --purple: #a855f7;
+  --orange: #f97316;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --cyan: #06b6d4;
+
+  
+  --bg-primary: #ffffff;
+  --bg-lost: #fee2e2;
+  --bg-found: #dcfce7;
+  --bg-urgent: #fef3c7;
+  --bg-critical: #ffedd5;
+
+  
+  --border-thin: 2px solid #000000;
+  --border-normal: 4px solid #000000;
+  --border-thick: 6px solid #000000;
+  --border-ultra: 8px solid #000000;
+
+  
+  --shadow-sm: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-md: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-xl: 12px 12px 0px 0px rgba(0, 0, 0, 1);
+
+  
+  --font-normal: 400;
+  --font-bold: 700;
+  --font-black: 900;
+}
+
+body {
+  font-family:
+    "Space Grotesk",
+    monospace,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background-color: var(--white);
+  color: var(--black);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.border-black {
+  border: 4px solid var(--black);
+}
+
+.border-black-thick {
+  border: 8px solid var(--black);
+}
+
+.shadow-neo {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-neo-lg {
+  box-shadow: var(--shadow-xl);
+}
+
+.shadow-neo-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-neo {
+  padding: 1rem 2rem;
+  font-weight: 900;
+  font-size: 1.125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 4px solid var(--black);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.btn-neo:hover {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.btn-neo:active {
+  box-shadow: none;
+  transform: translate(5px, 5px);
+}
+
+.btn-primary {
+  background-color: var(--black);
+  color: var(--yellow);
+}
+
+.btn-primary:hover {
+  background-color: var(--yellow);
+  color: var(--black);
+}
+
+.btn-secondary {
+  background-color: var(--white);
+  color: var(--black);
+}
+
+.btn-secondary:hover {
+  background-color: var(--black);
+  color: var(--white);
+}
+
+.btn-success {
+  background-color: var(--green);
+  color: var(--white);
+}
+
+.btn-danger {
+  background-color: var(--red);
+  color: var(--white);
+}
+
+.badge-neo {
+  display: inline-block;
+  padding: 0.5rem 1.5rem;
+  font-weight: 900;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 4px solid var(--black);
+}
+
+.badge-lost {
+  background-color: var(--red);
+  color: var(--white);
+}
+
+.badge-found {
+  background-color: var(--green);
+  color: var(--white);
+}
+
+.badge-urgent {
+  background-color: var(--yellow);
+  color: var(--black);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.card-neo {
+  padding: 2rem;
+  border: var(--border-ultra);
+  box-shadow: var(--shadow-xl);
+  transition: all 0.3s ease;
+  background-color: var(--white);
+}
+
+.card-neo:hover {
+  box-shadow: none;
+  transform: translate(12px, 12px);
+}
+
+.input-neo {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: var(--border-thick);
+  background-color: var(--white);
+  font-family: "Space Grotesk", monospace;
+  transition: all 0.2s ease;
+}
+
+.input-neo:focus {
+  outline: none;
+  box-shadow: var(--shadow-lg);
+}
+
+.input-neo::placeholder {
+  color: #999;
+  text-transform: uppercase;
+}
+
+.rotate-slight {
+  transform: rotate(3deg);
+  transition: transform 0.3s ease;
+}
+
+.rotate-slight:hover {
+  transform: rotate(-3deg) scale(1.05);
+}

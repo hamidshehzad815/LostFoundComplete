@@ -1,0 +1,94 @@
+
+@import "../explore/explore.css";
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--white);
+  border: 6px solid var(--black);
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 4px solid var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 2rem 1.5rem;
+}
+
+.modal-body p {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 4px solid var(--black);
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  border: 4px solid var(--black);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.modal-btn:hover {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.modal-btn.cancel {
+  background: var(--white);
+  color: var(--black);
+}
+
+.modal-btn.confirm {
+  background: var(--red);
+  color: var(--white);
+}
+
+.modal-btn.resolve {
+  background: var(--green);
+  color: var(--white);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--black);
+  font-weight: 900;
+}
