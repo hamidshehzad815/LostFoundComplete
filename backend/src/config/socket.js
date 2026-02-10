@@ -5,8 +5,9 @@ import { getRedis, isRedisConnected } from "./redis.js";
 
 const users = new Map();
 const ONLINE_KEY = "online_users";
-const allowedOrigins = (process.env.CORS_ORIGINS ||
-  "http://localhost:3000,http://localhost:3001")
+const allowedOrigins = (
+  process.env.CORS_ORIGINS || "http://localhost:3000,http://localhost:3001"
+)
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
