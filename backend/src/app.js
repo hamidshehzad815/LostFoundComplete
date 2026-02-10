@@ -63,7 +63,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(passport.initialize());
 
 app.options(
-  "*",
+  "/{*splat}",
   cors({
     origin: allowedOrigins,
     credentials: true,
