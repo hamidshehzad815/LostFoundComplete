@@ -2,6 +2,7 @@ import dashboardService from "../services/dashboard.service.js";
 import Item from "../models/item.model.js";
 import mongoose from "mongoose";
 import cache, { TTL, KEYS } from "../utils/cache.js";
+import { resolveItemsMedia, resolveUserMedia } from "../utils/media.js";
 
 class DashboardController {
   async getDashboardStats(req, res, next) {
@@ -15,9 +16,11 @@ class DashboardController {
         TTL.MEDIUM,
       );
 
+      const resolvedUser = await resolveUserMedia(stats.user);
+
       res.status(200).json({
         success: true,
-        data: stats,
+        data: { ...stats, user: resolvedUser },
       });
     } catch (error) {
       next(error);
@@ -31,10 +34,12 @@ class DashboardController {
 
       const items = await dashboardService.getUserActiveItems(userId, type);
 
+      const resolvedItems = await resolveItemsMedia(items);
+
       res.status(200).json({
         success: true,
-        count: items.length,
-        data: items,
+        count: resolvedItems.length,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
@@ -46,10 +51,12 @@ class DashboardController {
       const userId = req.user.id;
       const items = await dashboardService.getItemsWithPendingClaims(userId);
 
+      const resolvedItems = await resolveItemsMedia(items);
+
       res.status(200).json({
         success: true,
-        count: items.length,
-        data: items,
+        count: resolvedItems.length,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
@@ -109,9 +116,12 @@ class DashboardController {
 
       const result = await dashboardService.getUserItems(userId, options);
 
+      const resolvedItems = await resolveItemsMedia(result.items);
+
       res.status(200).json({
         success: true,
         ...result,
+        items: resolvedItems,
       });
     } catch (error) {
       next(error);

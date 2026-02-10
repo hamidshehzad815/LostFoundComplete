@@ -7,6 +7,7 @@ import {
   verifyEmail,
 } from "../services/user.services.js";
 import { asyncHandler, AppError } from "../middlewares/error.middleware.js";
+import { resolveUserMedia } from "../utils/media.js";
 
 const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
@@ -48,29 +49,35 @@ const profile = asyncHandler(async (req, res, next) => {
     throw new AppError("User not found", 404);
   }
 
+  const resolvedUser = await resolveUserMedia(user);
+
   res.status(200).json({
     success: true,
-    user,
+    user: resolvedUser,
   });
 });
 
 const updateProfile = asyncHandler(async (req, res, next) => {
   const user = await updateUserProfile(req.user.id, req.body);
 
+  const resolvedUser = await resolveUserMedia(user);
+
   res.status(200).json({
     success: true,
     message: "Profile updated successfully",
-    user,
+    user: resolvedUser,
   });
 });
 
 const deactivate = asyncHandler(async (req, res, next) => {
   const user = await deactivateAccount(req.user.id);
 
+  const resolvedUser = await resolveUserMedia(user);
+
   res.status(200).json({
     success: true,
     message: "Account deactivated successfully",
-    user,
+    user: resolvedUser,
   });
 });
 
@@ -83,14 +90,17 @@ const verify = asyncHandler(async (req, res, next) => {
 
   const user = await verifyEmail(token);
 
+  const resolvedUser = await resolveUserMedia(user);
+
   res.status(200).json({
     success: true,
     message: "Email verified successfully! You can now login.",
     user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      isVerified: user.isVerified,
+      id: resolvedUser._id,
+      username: resolvedUser.username,
+      email: resolvedUser.email,
+      isVerified: resolvedUser.isVerified,
+      profilePicture: resolvedUser.profilePicture,
     },
   });
 });
@@ -103,14 +113,16 @@ const getUserById = asyncHandler(async (req, res, next) => {
     throw new AppError("User not found", 404);
   }
 
+  const resolvedUser = await resolveUserMedia(user);
+
   res.status(200).json({
     success: true,
     data: {
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      profilePicture: user.profilePicture,
-      trustScore: user.trustScore,
+      _id: resolvedUser._id,
+      username: resolvedUser.username,
+      email: resolvedUser.email,
+      profilePicture: resolvedUser.profilePicture,
+      trustScore: resolvedUser.trustScore,
     },
   });
 });

@@ -1,6 +1,7 @@
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
+import { resolveMediaArray, resolveMediaUrl } from "../config/r2.js";
 
 class MessageController {
   async getConversations(req, res, next) {
@@ -66,13 +67,20 @@ class MessageController {
             ).select("_id title type images status");
           }
 
+          const resolvedProfilePicture = await resolveMediaUrl(
+            otherUser.profilePicture,
+          );
+          const resolvedItemImages = itemRef?.images
+            ? await resolveMediaArray(itemRef.images)
+            : itemRef?.images;
+
           return {
             conversationId: conv._id,
             otherUser: {
               _id: otherUser._id,
               username: otherUser.username,
               email: otherUser.email,
-              profilePicture: otherUser.profilePicture,
+              profilePicture: resolvedProfilePicture,
               trustScore: otherUser.trustScore,
             },
             lastMessage: {
@@ -80,7 +88,9 @@ class MessageController {
               createdAt: conv.lastMessage.createdAt,
               isFromMe: isSender,
             },
-            itemReference: itemRef,
+            itemReference: itemRef
+              ? { ...itemRef.toObject?.(), images: resolvedItemImages }
+              : itemRef,
             unreadCount: conv.unreadCount,
           };
         }),
@@ -139,7 +149,29 @@ class MessageController {
 
       res.status(200).json({
         success: true,
-        data: messages.reverse(),
+        data: await Promise.all(
+          messages
+            .reverse()
+            .map(async (message) => {
+              const normalized = message.toObject?.() || message;
+              if (normalized.sender?.profilePicture) {
+                normalized.sender.profilePicture = await resolveMediaUrl(
+                  normalized.sender.profilePicture,
+                );
+              }
+              if (normalized.recipient?.profilePicture) {
+                normalized.recipient.profilePicture = await resolveMediaUrl(
+                  normalized.recipient.profilePicture,
+                );
+              }
+              if (normalized.itemReference?.images) {
+                normalized.itemReference.images = await resolveMediaArray(
+                  normalized.itemReference.images,
+                );
+              }
+              return normalized;
+            }),
+        ),
         page: parseInt(page),
         pages: Math.ceil(total / limit),
         total,
@@ -182,7 +214,25 @@ class MessageController {
 
       res.status(201).json({
         success: true,
-        data: populatedMessage,
+        data: await (async () => {
+          const normalized = populatedMessage.toObject?.() || populatedMessage;
+          if (normalized.sender?.profilePicture) {
+            normalized.sender.profilePicture = await resolveMediaUrl(
+              normalized.sender.profilePicture,
+            );
+          }
+          if (normalized.recipient?.profilePicture) {
+            normalized.recipient.profilePicture = await resolveMediaUrl(
+              normalized.recipient.profilePicture,
+            );
+          }
+          if (normalized.itemReference?.images) {
+            normalized.itemReference.images = await resolveMediaArray(
+              normalized.itemReference.images,
+            );
+          }
+          return normalized;
+        })(),
       });
     } catch (error) {
       next(error);

@@ -2,6 +2,7 @@ import Item from "../models/item.model.js";
 import User from "../models/user.model.js";
 import cache, { TTL, KEYS } from "../utils/cache.js";
 import { isR2Configured, uploadToR2, saveToLocal } from "../config/r2.js";
+import { resolveItemMedia, resolveItemsMedia } from "../utils/media.js";
 
 class ItemController {
   async createItem(req, res, next) {
@@ -112,13 +113,15 @@ class ItemController {
         TTL.MEDIUM,
       );
 
+      const resolvedItems = await resolveItemsMedia(result.items);
+
       res.status(200).json({
         success: true,
-        count: result.items.length,
+        count: resolvedItems.length,
         total: result.total,
         page: parseInt(page),
         pages: Math.ceil(result.total / limit),
-        data: result.items,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
@@ -159,9 +162,11 @@ class ItemController {
         if (freshItem) await freshItem.incrementViews(req.user.id);
       }
 
+      const resolvedItem = await resolveItemMedia(item);
+
       res.status(200).json({
         success: true,
-        data: item,
+        data: resolvedItem,
       });
     } catch (error) {
       next(error);
@@ -341,9 +346,11 @@ class ItemController {
         .populate("postedBy", "username email profilePicture trustScore")
         .sort({ createdAt: -1 });
 
+      const resolvedItems = await resolveItemsMedia(items);
+
       res.status(200).json({
         success: true,
-        data: items,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
@@ -418,9 +425,11 @@ class ItemController {
         });
       }
 
+      const resolvedItem = await resolveItemMedia(item);
+
       res.status(200).json({
         success: true,
-        data: item.claims,
+        data: resolvedItem.claims,
       });
     } catch (error) {
       next(error);
@@ -555,13 +564,15 @@ class ItemController {
         Item.countDocuments(query),
       ]);
 
+      const resolvedItems = await resolveItemsMedia(items);
+
       res.status(200).json({
         success: true,
-        count: items.length,
+        count: resolvedItems.length,
         total,
         page: parseInt(page),
         pages: Math.ceil(total / limit),
-        data: items,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
@@ -647,10 +658,12 @@ class ItemController {
         .populate("postedBy", "username profilePicture trustScore")
         .limit(50);
 
+      const resolvedItems = await resolveItemsMedia(items);
+
       res.status(200).json({
         success: true,
-        count: items.length,
-        data: items,
+        count: resolvedItems.length,
+        data: resolvedItems,
       });
     } catch (error) {
       next(error);
