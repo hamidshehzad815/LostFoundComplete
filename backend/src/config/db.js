@@ -7,10 +7,8 @@ const connectDatabase = async () => {
   const spinner = ora("Connecting to database...").start();
 
   const dbName = process.env.MONGO_DB_NAME || "LostFound";
-  const isProduction = process.env.NODE_ENV === "development";
-  const uri = isProduction
-    ? process.env.ATLAS_URI || process.env.MONGO_URI
-    : process.env.LOCAL_URI || process.env.MONGO_URI || process.env.ATLAS_URI;
+  const uri =
+    process.env.ATLAS_URI || process.env.MONGO_URI || process.env.LOCAL_URI;
 
   if (!uri) {
     spinner.fail(

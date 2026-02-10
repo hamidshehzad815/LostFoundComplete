@@ -80,7 +80,7 @@ const userSignup = async (registrationData) => {
   });
 
   sendVerificationEmail(email, username, verificationToken).catch((err) =>
-    console.error("Failed to send verification email:", err),
+    console.error("Failed to send verification email:", err.message),
   );
 
   const token = user.createJWT();

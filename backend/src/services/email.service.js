@@ -1,12 +1,19 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GOOGLE_GMAIL,
-    pass: process.env.GOOGLE_CLIENT_FOR_NODEMAILER,
-  },
-});
+let transporter;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GOOGLE_GMAIL,
+        pass: process.env.GOOGLE_CLIENT_FOR_NODEMAILER,
+      },
+    });
+  }
+  return transporter;
+}
 
 export const sendWelcomeEmail = async (email, username) => {
   const mailOptions = {
@@ -59,7 +66,7 @@ export const sendWelcomeEmail = async (email, username) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await getTransporter().sendMail(mailOptions);
   } catch (error) {
     console.error("Error sending welcome email:", error);
     throw error;
@@ -114,7 +121,7 @@ export const sendVerificationEmail = async (
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await getTransporter().sendMail(mailOptions);
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw error;

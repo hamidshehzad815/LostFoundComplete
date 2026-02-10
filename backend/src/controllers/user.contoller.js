@@ -27,7 +27,7 @@ const login = asyncHandler(async (req, res, next) => {
 
 const signup = asyncHandler(async (req, res, next) => {
   const { username, email, password } = req.body;
-
+  console.log(req.body);
   if (!username || !email || !password) {
     throw new AppError("Please provide username, email and password", 400);
   }
