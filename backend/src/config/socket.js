@@ -16,6 +16,10 @@ if (
 ) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
+const prodFrontend = "https://lost-found-complete.vercel.app";
+if (!allowedOrigins.includes(prodFrontend)) {
+  allowedOrigins.push(prodFrontend);
+}
 let io;
 
 async function setUserOnline(userId, socketId) {
