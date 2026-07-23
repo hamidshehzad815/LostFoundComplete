@@ -353,6 +353,11 @@ export default function MessagesClient() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  };
+
+  const formatSidebarTime = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -360,15 +365,48 @@ export default function MessagesClient() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
+  const shouldShowDayDivider = (index: number) => {
+    if (index === 0) return true;
+    const current = new Date(messages[index].createdAt).toDateString();
+    const previous = new Date(messages[index - 1].createdAt).toDateString();
+    return current !== previous;
+  };
+
+  const formatDayLabel = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString([], {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const selectedConversationData = conversations.find((c) => {
+    if (c.otherUser._id !== selectedConversation) return false;
+    const parts = c.conversationId.split("_");
+    const convItemId = parts.length === 3 ? parts[2] : null;
+    return (convItemId || null) === (currentItemId || null);
+  });
+
+  const relatedItem =
+    selectedConversationData?.itemReference ||
+    messages.find((msg) => msg.itemReference)?.itemReference ||
+    null;
+
   const selectedUser =
-    conversations.find((c) => c.otherUser._id === selectedConversation)
-      ?.otherUser || otherUserInfo;
+    selectedConversationData?.otherUser || otherUserInfo;
   const isOtherUserOnline = selectedUser && onlineUsers.has(selectedUser._id);
   const isOtherUserTyping = selectedUser && typingUsers.has(selectedUser._id);
 
@@ -444,7 +482,7 @@ export default function MessagesClient() {
                               {conv.otherUser.username}
                             </span>
                             <span className="conversation-time">
-                              {formatTime(conv.lastMessage.createdAt)}
+                              {formatSidebarTime(conv.lastMessage.createdAt)}
                             </span>
                           </div>
                           {conv.itemReference && (
@@ -531,57 +569,70 @@ export default function MessagesClient() {
                       </p>
                     </div>
                   </div>
+                  {relatedItem && (
+                    <button
+                      type="button"
+                      className="chat-item-chip"
+                      onClick={() =>
+                        router.push(`/item/${relatedItem._id}`)
+                      }
+                      title="View related item"
+                    >
+                      {relatedItem.images?.[0] && (
+                        <img
+                          src={withApiBase(relatedItem.images[0])}
+                          alt=""
+                        />
+                      )}
+                      <span className="chat-item-chip-text">
+                        <span className="chat-item-chip-label">
+                          About this {relatedItem.type} item
+                        </span>
+                        <span className="chat-item-chip-title">
+                          {relatedItem.title}
+                        </span>
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="messages-list">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg._id}
-                      className={`message ${
-                        msg.sender._id === currentUser?.id ? "sent" : "received"
-                      }`}
-                    >
-                      {msg.sender._id !== currentUser?.id && (
-                        <div className="message-avatar">
-                          {msg.sender.profilePicture ? (
-                            <img
-                              src={
-                                msg.sender.profilePicture.startsWith("http")
-                                  ? msg.sender.profilePicture
-                                  : withApiBase(msg.sender.profilePicture)
-                              }
-                              alt={msg.sender.username}
-                            />
-                          ) : (
-                            <div className="avatar-placeholder-small">
-                              {msg.sender.username.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                  {messages.map((msg, index) => (
+                    <div key={msg._id} className="message-block">
+                      {shouldShowDayDivider(index) && (
+                        <div className="day-divider">
+                          <span>{formatDayLabel(msg.createdAt)}</span>
                         </div>
                       )}
-                      <div className="message-content">
-                        {msg.itemReference && (
-                          <div className="message-item-ref">
-                            <img
-                              src={
-                                msg.itemReference.images?.[0]
-                                  ? withApiBase(msg.itemReference.images[0])
-                                  : "/placeholder-image.svg"
-                              }
-                              alt={msg.itemReference.title}
-                            />
-                            <div>
-                              <strong>{msg.itemReference.title}</strong>
-                              <span className="item-type">
-                                {msg.itemReference.type === "lost"
-                                  ? "Lost Item"
-                                  : "Found Item"}
-                              </span>
-                            </div>
+                      <div
+                        className={`message ${
+                          msg.sender._id === currentUser?.id
+                            ? "sent"
+                            : "received"
+                        }`}
+                      >
+                        {msg.sender._id !== currentUser?.id && (
+                          <div className="message-avatar">
+                            {msg.sender.profilePicture ? (
+                              <img
+                                src={
+                                  msg.sender.profilePicture.startsWith("http")
+                                    ? msg.sender.profilePicture
+                                    : withApiBase(msg.sender.profilePicture)
+                                }
+                                alt={msg.sender.username}
+                              />
+                            ) : (
+                              <div className="avatar-placeholder-small">
+                                {msg.sender.username.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                         )}
-                        <div className="message-bubble">
-                          <p>{msg.content}</p>
+                        <div className="message-content">
+                          <div className="message-bubble">
+                            <p className="message-text">{msg.content}</p>
+                          </div>
                           <div className="message-meta">
                             <span className="message-time">
                               {formatTime(msg.createdAt)}
