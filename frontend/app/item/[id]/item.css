@@ -133,7 +133,7 @@
   margin-bottom: 0;
 }
 
-.item-title {
+.item-heading .item-title {
   font-size: clamp(2.1rem, 4vw, 3.4rem);
 }
 

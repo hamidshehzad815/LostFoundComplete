@@ -23,31 +23,28 @@ if (!allowedOrigins.includes(prodFrontend)) {
 }
 let io;
 
+const toId = (value) => (value == null ? "" : String(value));
+
+function userRoom(userId) {
+  return `user:${toId(userId)}`;
+}
+
 async function setUserOnline(userId, socketId) {
-  users.set(userId, socketId);
+  const id = toId(userId);
+  users.set(id, socketId);
   const redis = getRedis();
   if (redis && isRedisConnected()) {
-    await redis.hset(ONLINE_KEY, userId, socketId).catch(() => {});
+    await redis.hset(ONLINE_KEY, id, socketId).catch(() => {});
   }
 }
 
 async function setUserOffline(userId) {
-  users.delete(userId);
+  const id = toId(userId);
+  users.delete(id);
   const redis = getRedis();
   if (redis && isRedisConnected()) {
-    await redis.hdel(ONLINE_KEY, userId).catch(() => {});
+    await redis.hdel(ONLINE_KEY, id).catch(() => {});
   }
-}
-
-async function getSocketId(userId) {
-  const local = users.get(userId);
-  if (local) return local;
-
-  const redis = getRedis();
-  if (redis && isRedisConnected()) {
-    return redis.hget(ONLINE_KEY, userId).catch(() => null);
-  }
-  return null;
 }
 
 export function initializeSocket(server) {
@@ -68,7 +65,7 @@ export function initializeSocket(server) {
       }
 
       const decoded = jwt.verify(token, process.env.SECRET_KEY);
-      socket.userId = decoded.id;
+      socket.userId = toId(decoded.id);
       next();
     } catch (error) {
       next(new Error("Authentication error: Invalid token"));
@@ -76,15 +73,17 @@ export function initializeSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    const userId = socket.userId;
+    const userId = toId(socket.userId);
 
     setUserOnline(userId, socket.id);
+    socket.join(userRoom(userId));
     socket.broadcast.emit("user:online", { userId });
-    socket.join(`user:${userId}`);
 
     socket.on("message:send", async (data) => {
       try {
-        const { recipientId, content, itemId } = data;
+        const recipientId = toId(data?.recipientId);
+        const content = data?.content?.trim?.() || data?.content;
+        const itemId = data?.itemId ? toId(data.itemId) : null;
 
         if (!recipientId || !content) {
           socket.emit("error", {
@@ -110,40 +109,40 @@ export function initializeSocket(server) {
         const populatedMessage = await Message.findById(message._id)
           .populate("sender", "_id username email profilePicture trustScore")
           .populate("recipient", "_id username email profilePicture trustScore")
-          .populate("itemReference", "title type images");
+          .populate("itemReference", "title type images status")
+          .lean();
 
-        socket.emit("message:received", populatedMessage);
-
-        const recipientSocketId = await getSocketId(recipientId);
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit("message:received", populatedMessage);
+        // Room-based delivery is reliable even if socket-id maps are stale.
+        io.to(userRoom(userId)).emit("message:received", populatedMessage);
+        if (recipientId !== userId) {
+          io.to(userRoom(recipientId)).emit(
+            "message:received",
+            populatedMessage,
+          );
         }
       } catch (error) {
+        console.error("message:send failed:", error);
         socket.emit("error", { message: "Failed to send message" });
       }
     });
 
     socket.on("typing:start", (data) => {
-      const { recipientId } = data;
-      getSocketId(recipientId).then((recipientSocketId) => {
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit("typing:start", { userId });
-        }
-      });
+      const recipientId = toId(data?.recipientId);
+      if (!recipientId) return;
+      io.to(userRoom(recipientId)).emit("typing:start", { userId });
     });
 
     socket.on("typing:stop", (data) => {
-      const { recipientId } = data;
-      getSocketId(recipientId).then((recipientSocketId) => {
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit("typing:stop", { userId });
-        }
-      });
+      const recipientId = toId(data?.recipientId);
+      if (!recipientId) return;
+      io.to(userRoom(recipientId)).emit("typing:stop", { userId });
     });
 
     socket.on("message:read", async (data) => {
       try {
-        const { messageId, otherUserId, itemId } = data;
+        const otherUserId = toId(data?.otherUserId);
+        const itemId = data?.itemId ? toId(data.itemId) : null;
+        if (!otherUserId) return;
 
         const conversationId = Message.generateConversationId(
           userId,
@@ -163,14 +162,13 @@ export function initializeSocket(server) {
           },
         );
 
-        const senderSocketId = await getSocketId(otherUserId);
-        if (senderSocketId) {
-          io.to(senderSocketId).emit("message:read", {
-            conversationId,
-            readBy: userId,
-          });
-        }
-      } catch (error) {}
+        io.to(userRoom(otherUserId)).emit("message:read", {
+          conversationId,
+          readBy: userId,
+        });
+      } catch (error) {
+        console.error("message:read failed:", error);
+      }
     });
 
     socket.on("disconnect", () => {

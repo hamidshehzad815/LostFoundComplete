@@ -27,6 +27,7 @@ export const isTokenExpired = (token: string): boolean => {
 export const setAuthToken = (token: string) => {
   if (typeof window !== "undefined") {
     localStorage.setItem("authToken", token);
+    window.dispatchEvent(new Event("auth-changed"));
   }
 };
 
@@ -40,6 +41,7 @@ export const getAuthToken = (): string | null => {
 export const removeAuthToken = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem("authToken");
+    window.dispatchEvent(new Event("auth-changed"));
   }
 };
 
@@ -61,6 +63,7 @@ export const isAuthenticated = (): boolean => {
 export const setUser = (user: any) => {
   if (typeof window !== "undefined") {
     localStorage.setItem("user", JSON.stringify(user));
+    window.dispatchEvent(new Event("auth-changed"));
   }
 };
 
@@ -72,9 +75,16 @@ export const getUser = () => {
   return null;
 };
 
+export const getUserId = (user?: any): string => {
+  const source = user ?? getUser();
+  if (!source) return "";
+  return String(source.id || source._id || "");
+};
+
 export const logout = () => {
   removeAuthToken();
   if (typeof window !== "undefined") {
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth-changed"));
   }
 };

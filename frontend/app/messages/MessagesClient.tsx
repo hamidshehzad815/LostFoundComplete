@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuthToken, isAuthenticated, getUser } from "@/lib/auth";
+import { getAuthToken, isAuthenticated, getUser, getUserId } from "@/lib/auth";
 import { useSocket } from "@/contexts/SocketContext";
 import {
   API_AUTH_URL,
@@ -71,6 +71,47 @@ export default function MessagesClient() {
   const [isItemResolved, setIsItemResolved] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const currentUser = getUser();
+  const currentUserId = getUserId(currentUser);
+
+  const selectedConversationRef = useRef<string | null>(null);
+  const currentItemIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string>(currentUserId);
+
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    currentItemIdRef.current = currentItemId;
+  }, [currentItemId]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
+  const toId = (value: unknown) =>
+    value == null ? "" : String((value as any)._id || value);
+
+  const getMessageItemId = (message: Message) =>
+    toId(message.itemReference?._id || message.itemReference || "");
+
+  const isSameConversation = (
+    message: Message,
+    otherUserId: string | null,
+    itemId: string | null,
+  ) => {
+    if (!otherUserId) return false;
+    const me = currentUserIdRef.current;
+    const senderId = toId(message.sender);
+    const recipientId = toId(message.recipient);
+    const involvesPair =
+      (senderId === me && recipientId === otherUserId) ||
+      (recipientId === me && senderId === otherUserId);
+    if (!involvesPair) return false;
+
+    const messageItemId = getMessageItemId(message) || null;
+    return (messageItemId || null) === (itemId || null);
+  };
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -89,21 +130,69 @@ export default function MessagesClient() {
 
   useEffect(() => {
     if (!socket) return;
-    socket.on("message:received", handleNewMessage);
-    socket.on("typing:start", handleTypingStart);
-    socket.on("typing:stop", handleTypingStop);
-    socket.on("message:read", handleMessageRead);
+
+    const onNewMessage = (message: Message) => {
+      const activeUserId = selectedConversationRef.current;
+      const activeItemId = currentItemIdRef.current;
+      const me = currentUserIdRef.current;
+      const messageId = toId(message._id);
+
+      if (isSameConversation(message, activeUserId, activeItemId)) {
+        setMessages((prev) => {
+          if (prev.some((existing) => toId(existing._id) === messageId)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+
+        if (toId(message.sender) === activeUserId && activeUserId) {
+          socket.emit("message:read", {
+            otherUserId: activeUserId,
+            itemId: activeItemId || null,
+          });
+        }
+      }
+
+      // Keep the sidebar fresh for both participants without a full reload.
+      fetchConversations();
+    };
+
+    const onTypingStart = ({ userId }: { userId: string }) => {
+      setTypingUsers((prev) => new Set([...prev, String(userId)]));
+    };
+
+    const onTypingStop = ({ userId }: { userId: string }) => {
+      setTypingUsers((prev) => {
+        const updated = new Set(prev);
+        updated.delete(String(userId));
+        return updated;
+      });
+    };
+
+    const onMessageRead = ({ conversationId }: { conversationId: string }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.conversationId === conversationId ? { ...msg, isRead: true } : msg,
+        ),
+      );
+      fetchConversations();
+    };
+
+    socket.on("message:received", onNewMessage);
+    socket.on("typing:start", onTypingStart);
+    socket.on("typing:stop", onTypingStop);
+    socket.on("message:read", onMessageRead);
     socket.on("error", (error) => console.error("Socket error:", error));
 
     return () => {
-      socket.off("message:received", handleNewMessage);
-      socket.off("typing:start", handleTypingStart);
-      socket.off("typing:stop", handleTypingStop);
-      socket.off("message:read", handleMessageRead);
+      socket.off("message:received", onNewMessage);
+      socket.off("typing:start", onTypingStart);
+      socket.off("typing:stop", onTypingStop);
+      socket.off("message:read", onMessageRead);
       socket.off("error");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, selectedConversation]);
+  }, [socket]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -227,73 +316,22 @@ export default function MessagesClient() {
     }
   };
 
-  const handleNewMessage = (message: Message) => {
-    if (selectedConversation) {
-      const isInConversation =
-        (message.sender._id === currentUser?.id &&
-          message.recipient._id === selectedConversation) ||
-        (message.recipient._id === currentUser?.id &&
-          message.sender._id === selectedConversation);
-
-      if (isInConversation) {
-        setMessages((prev) => [...prev, message]);
-
-        if (message.sender._id === selectedConversation && socket) {
-          socket.emit("message:read", {
-            otherUserId: selectedConversation,
-          });
-
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.otherUser._id === selectedConversation
-                ? { ...conv, unreadCount: 0 }
-                : conv,
-            ),
-          );
-        }
-      }
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !selectedConversation || !socket || !isConnected) {
+      return;
     }
 
-    setTimeout(() => {
-      fetchConversations();
-    }, 100);
-  };
-
-  const handleTypingStart = ({ userId }: { userId: string }) => {
-    setTypingUsers((prev) => new Set([...prev, userId]));
-  };
-
-  const handleTypingStop = ({ userId }: { userId: string }) => {
-    setTypingUsers((prev) => {
-      const updated = new Set(prev);
-      updated.delete(userId);
-      return updated;
-    });
-  };
-
-  const handleMessageRead = ({ conversationId }: { conversationId: string }) => {
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.conversationId === conversationId ? { ...msg, isRead: true } : msg,
-      ),
-    );
-    fetchConversations();
-  };
-
-  const sendMessage = async () => {
-    if (!messageInput.trim() || !selectedConversation || !socket) return;
-
+    const content = messageInput.trim();
     setSending(true);
+    setMessageInput("");
 
     socket.emit("message:send", {
       recipientId: selectedConversation,
-      content: messageInput.trim(),
+      content,
       itemId: currentItemId || null,
     });
 
-    setMessageInput("");
     setSending(false);
-
     socket.emit("typing:stop", { recipientId: selectedConversation });
   };
 
@@ -487,7 +525,7 @@ export default function MessagesClient() {
                           </div>
                           {conv.itemReference && (
                             <div className="conversation-item-ref">
-                              <span className="item-title">
+                              <span className="conversation-item-name">
                                 {conv.itemReference.title}
                               </span>
                               {conv.itemReference.status === "resolved" && (
@@ -606,12 +644,12 @@ export default function MessagesClient() {
                       )}
                       <div
                         className={`message ${
-                          msg.sender._id === currentUser?.id
+                          toId(msg.sender) === currentUserId
                             ? "sent"
                             : "received"
                         }`}
                       >
-                        {msg.sender._id !== currentUser?.id && (
+                        {toId(msg.sender) !== currentUserId && (
                           <div className="message-avatar">
                             {msg.sender.profilePicture ? (
                               <img
@@ -637,7 +675,7 @@ export default function MessagesClient() {
                             <span className="message-time">
                               {formatTime(msg.createdAt)}
                             </span>
-                            {msg.sender._id === currentUser?.id && (
+                            {toId(msg.sender) === currentUserId && (
                               <span className="message-status">
                                 {msg.isRead ? "Read" : "Sent"}
                               </span>

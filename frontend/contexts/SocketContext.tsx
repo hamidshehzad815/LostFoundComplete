@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { io, Socket } from "socket.io-client";
 import { getAuthToken, isAuthenticated } from "@/lib/auth";
 import { SOCKET_URL } from "@/lib/config";
@@ -23,23 +29,49 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [authEpoch, setAuthEpoch] = useState(0);
+
+  const bumpAuth = useCallback(() => {
+    setAuthEpoch((value) => value + 1);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const onAuthChanged = () => bumpAuth();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "authToken" || event.key === "user") {
+        bumpAuth();
+      }
+    };
+
+    window.addEventListener("auth-changed", onAuthChanged);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("auth-changed", onAuthChanged);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [bumpAuth]);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    const authed = Boolean(token && isAuthenticated());
+
+    if (!authed) {
+      setSocket((prev) => {
+        if (prev) prev.close();
+        return null;
+      });
+      setIsConnected(false);
+      setOnlineUsers(new Set());
       return;
     }
 
-    const token = getAuthToken();
-    if (!token) return;
-
     const newSocket = io(SOCKET_URL, {
-      auth: {
-        token,
-      },
-      transports: ["polling", "websocket"],
+      auth: { token },
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 20,
+      autoConnect: true,
     });
 
     newSocket.on("connect", () => {
@@ -51,36 +83,32 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
+      console.error("Socket connection error:", error.message);
       setIsConnected(false);
     });
 
-    newSocket.on("error", (error) => {
-      console.error("Socket error:", error);
-    });
-
     newSocket.on("user:online", ({ userId }) => {
-      setOnlineUsers((prev) => new Set([...prev, userId]));
+      setOnlineUsers((prev) => new Set([...prev, String(userId)]));
     });
 
     newSocket.on("user:offline", ({ userId }) => {
       setOnlineUsers((prev) => {
         const updated = new Set(prev);
-        updated.delete(userId);
+        updated.delete(String(userId));
         return updated;
       });
     });
 
-    newSocket.on("error", (error) => {
-      console.error("Socket error:", error);
+    setSocket((prev) => {
+      if (prev) prev.close();
+      return newSocket;
     });
 
-    setSocket(newSocket);
-
     return () => {
+      newSocket.removeAllListeners();
       newSocket.close();
     };
-  }, []);
+  }, [authEpoch]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected, onlineUsers }}>

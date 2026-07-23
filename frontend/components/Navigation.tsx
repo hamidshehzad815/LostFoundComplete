@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { isAuthenticated, logout, getUser, getAuthToken } from "@/lib/auth";
+import { isAuthenticated, logout, getUser, getUserId, getAuthToken } from "@/lib/auth";
 import { useSocket } from "@/contexts/SocketContext";
 import { API_ENDPOINTS } from "@/lib/config";
 import "./Navigation.css";
@@ -33,9 +33,9 @@ export default function Navigation() {
   useEffect(() => {
     if (socket && isAuth) {
       const handleNewMessage = (message: any) => {
-        const currentUserId = user?.id;
+        const currentUserId = getUserId(user);
         if (
-          message.recipient._id === currentUserId &&
+          String(message.recipient?._id || message.recipient) === currentUserId &&
           pathname !== "/messages"
         ) {
           setHasNewMessage(true);

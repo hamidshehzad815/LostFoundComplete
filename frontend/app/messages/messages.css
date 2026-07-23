@@ -180,13 +180,18 @@
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.2rem;
-  font-size: 0.72rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.conversation-item-ref .item-title {
+.conversation-item-ref .conversation-item-name {
+  display: block;
+  font-size: 0.72rem;
   font-weight: 550;
+  line-height: 1.25;
   color: var(--muted);
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
