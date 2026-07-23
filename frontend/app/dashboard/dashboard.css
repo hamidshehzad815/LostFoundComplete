@@ -1,7 +1,7 @@
 
 
 .dashboard-container {
-  padding: 90px 20px 40px;
+  padding: 80px 20px 32px;
   max-width: 1400px;
   margin: 0 auto;
   min-height: 100vh;
@@ -188,7 +188,6 @@
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 1rem;
   background: var(--white);
 }
 
@@ -217,13 +216,9 @@
   background: var(--orange);
 }
 
-.stat-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
-}
-
 .stat-content {
   min-width: 0;
+  width: 100%;
 }
 
 .stat-value {
@@ -358,14 +353,19 @@
   border-left: 8px solid var(--green);
 }
 
-.activity-type-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
 .activity-info {
   flex: 1;
   min-width: 0;
+}
+
+.activity-type-tag.lost {
+  background: var(--red);
+  color: var(--white);
+}
+
+.activity-type-tag.found {
+  background: var(--green);
+  color: var(--white);
 }
 
 .activity-title {
@@ -440,11 +440,6 @@
   border: 6px solid var(--black);
   background: var(--bg-urgent);
   box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
-}
-
-.empty-state-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
 }
 
 .empty-state h3 {

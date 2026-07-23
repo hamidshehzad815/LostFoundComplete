@@ -205,7 +205,6 @@ export default function Dashboard() {
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon">📦</div>
           <div className="stat-content">
             <h2 className="stat-value">{quickStats?.totalItems || 0}</h2>
             <p className="stat-label">Total Posts</p>
@@ -213,7 +212,6 @@ export default function Dashboard() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">🟢</div>
           <div className="stat-content">
             <h2 className="stat-value">{quickStats?.activeItems || 0}</h2>
             <p className="stat-label">Active</p>
@@ -221,7 +219,6 @@ export default function Dashboard() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">✅</div>
           <div className="stat-content">
             <h2 className="stat-value">{quickStats?.resolvedItems || 0}</h2>
             <p className="stat-label">Resolved</p>
@@ -229,7 +226,6 @@ export default function Dashboard() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">🔴</div>
           <div className="stat-content">
             <h2 className="stat-value">
               {dashboardStats?.overview.lostItems || 0}
@@ -239,7 +235,6 @@ export default function Dashboard() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">🟡</div>
           <div className="stat-content">
             <h2 className="stat-value">
               {dashboardStats?.overview.foundItems || 0}
@@ -249,7 +244,6 @@ export default function Dashboard() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">👁️</div>
           <div className="stat-content">
             <h2 className="stat-value">{quickStats?.totalViews || 0}</h2>
             <p className="stat-label">Views</p>
@@ -317,12 +311,12 @@ export default function Dashboard() {
                   className={`activity-item ${activity.type}`}
                   onClick={() => router.push(`/item/${activity.id}`)}
                 >
-                  <div className="activity-type-icon">
-                    {activity.type === "lost" ? "🔴" : "🟢"}
-                  </div>
                   <div className="activity-info">
                     <h4 className="activity-title">{activity.title}</h4>
                     <div className="activity-meta">
+                      <span className={`activity-type-tag ${activity.type}`}>
+                        {activity.type}
+                      </span>
                       <span>{activity.category}</span>
                       <span>
                         {new Date(activity.date).toLocaleDateString()}
@@ -331,8 +325,8 @@ export default function Dashboard() {
                   </div>
                   <div className="activity-right">
                     <div className="activity-numbers">
-                      <span>👁️ {activity.views}</span>
-                      <span>💬 {activity.claimsCount}</span>
+                      <span>{activity.views} views</span>
+                      <span>{activity.claimsCount} claims</span>
                     </div>
                     <div className={`activity-status ${activity.status}`}>
                       {activity.status}
@@ -348,7 +342,6 @@ export default function Dashboard() {
       {(!dashboardStats?.recentActivity ||
         dashboardStats.recentActivity.length === 0) && (
         <div className="empty-state">
-          <div className="empty-state-icon">📭</div>
           <h3>No Activity Yet</h3>
           <p>Post your first lost or found item to get started!</p>
         </div>

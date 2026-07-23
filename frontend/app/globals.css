@@ -7,6 +7,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Slightly zoomed out so compact pages fit without unnecessary scroll */
+  font-size: 90%;
+}
+
 :root {
   
   --black: #000000;
