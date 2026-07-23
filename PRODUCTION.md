@@ -4,6 +4,9 @@
 - Keep all secrets in `.env` only; never commit them.
 - Rotate credentials if any secret was ever committed or shared.
 - Use `NODE_ENV=production` in production.
+- Set `BREVO_API_KEY` for transactional email (Brevo HTTP API; works on Render).
+- Optional: `BREVO_SENDER_EMAIL` / `BREVO_SENDER_NAME` (defaults to `hamidshehzad815@gmail.com` / `Lost & Found`).
+- Verify the sender address in the Brevo dashboard before sending.
 
 ## Network and TLS
 - Terminate TLS at a reverse proxy (Nginx/Caddy) or a load balancer.

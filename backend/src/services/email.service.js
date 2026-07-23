@@ -1,28 +1,69 @@
-import nodemailer from "nodemailer";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const DEFAULT_SENDER_EMAIL = "hamidshehzad815@gmail.com";
+const DEFAULT_SENDER_NAME = "Lost & Found";
 
-let transporter;
+function getSender() {
+  return {
+    name: process.env.BREVO_SENDER_NAME || DEFAULT_SENDER_NAME,
+    email: process.env.BREVO_SENDER_EMAIL || DEFAULT_SENDER_EMAIL,
+  };
+}
 
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.GOOGLE_GMAIL,
-        pass: process.env.GOOGLE_CLIENT_FOR_NODEMAILER,
-      },
-    });
+async function sendViaBrevo({ to, subject, htmlContent }) {
+  const apiKey = process.env.BREVO_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "BREVO_API_KEY is not set. Add it in your Render environment variables.",
+    );
   }
-  return transporter;
+
+  const response = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify({
+      sender: getSender(),
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      htmlContent,
+    }),
+  });
+
+  const rawBody = await response.text();
+  let data = null;
+
+  if (rawBody) {
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      data = { message: rawBody };
+    }
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.message ||
+      data?.error ||
+      `Brevo API error (${response.status} ${response.statusText})`;
+    const error = new Error(message);
+    error.status = response.status;
+    error.code = data?.code;
+    throw error;
+  }
+
+  return data;
 }
 
 export const sendWelcomeEmail = async (email, username) => {
-  const mailOptions = {
-    from: process.env.GOOGLE_GMAIL,
-    to: email,
-    subject: "Welcome to Lost & Found! 🔍",
-    html: `
+  try {
+    await sendViaBrevo({
+      to: { email, name: username },
+      subject: "Welcome to Lost & Found! 🔍",
+      htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #0ea5e9; font-size: 2.5em;">🔍</h1>
@@ -65,10 +106,7 @@ export const sendWelcomeEmail = async (email, username) => {
         </div>
       </div>
     `,
-  };
-
-  try {
-    await getTransporter().sendMail(mailOptions);
+    });
   } catch (error) {
     console.error("Error sending welcome email:", error);
     throw error;
@@ -82,11 +120,11 @@ export const sendVerificationEmail = async (
 ) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-  const mailOptions = {
-    from: process.env.GOOGLE_GMAIL,
-    to: email,
-    subject: "Verify Your Email - Lost & Found",
-    html: `
+  try {
+    await sendViaBrevo({
+      to: { email, name: username },
+      subject: "Verify Your Email - Lost & Found",
+      htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #0ea5e9; font-size: 2.5em;">🔍</h1>
@@ -120,10 +158,7 @@ export const sendVerificationEmail = async (
         </div>
       </div>
     `,
-  };
-
-  try {
-    await getTransporter().sendMail(mailOptions);
+    });
   } catch (error) {
     console.error("Error sending verification email:", error);
     throw error;
