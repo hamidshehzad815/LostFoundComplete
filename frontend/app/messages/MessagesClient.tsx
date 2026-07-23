@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuthToken, isAuthenticated, getUser } from "@/lib/auth";
-import Navigation from "@/components/Navigation";
 import { useSocket } from "@/contexts/SocketContext";
 import {
   API_AUTH_URL,
@@ -375,27 +374,22 @@ export default function MessagesClient() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="messages-page">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading messages...</p>
-          </div>
+      <main className="page messages-page">
+        <div className="loading-state">
+          <div className="spinner" />
+          <p className="muted">Loading messages...</p>
         </div>
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="messages-page">
+    <main className="page messages-page">
         <div className="messages-container">
-          {/* Conversations Sidebar */}
           <div className="conversations-sidebar">
             <div className="sidebar-header">
-              <h2>💬 Messages</h2>
+              <span className="eyebrow">Inbox</span>
+              <h2 className="section-title">Messages</h2>
             </div>
 
             <div className="conversations-list">
@@ -460,7 +454,7 @@ export default function MessagesClient() {
                               </span>
                               {conv.itemReference.status === "resolved" && (
                                 <span className="resolved-badge">
-                                  ✓ Resolved
+                                  Resolved
                                 </span>
                               )}
                             </div>
@@ -494,7 +488,7 @@ export default function MessagesClient() {
                         }}
                         title="Hide conversation"
                       >
-                        🗑️
+                        Hide
                       </button>
                     </div>
                   );
@@ -503,17 +497,14 @@ export default function MessagesClient() {
             </div>
           </div>
 
-          {/* Chat Area */}
           <div className="chat-area">
             {!selectedConversation ? (
               <div className="no-chat-selected">
-                <div className="no-chat-icon">💬</div>
                 <h3>Select a conversation</h3>
                 <p>Choose a conversation from the left to start messaging</p>
               </div>
             ) : (
               <>
-                {/* Chat Header */}
                 <div className="chat-header">
                   <div className="chat-user-info">
                     <div className="chat-user-avatar">
@@ -542,7 +533,6 @@ export default function MessagesClient() {
                   </div>
                 </div>
 
-                {/* Messages List */}
                 <div className="messages-list">
                   {messages.map((msg) => (
                     <div
@@ -598,7 +588,7 @@ export default function MessagesClient() {
                             </span>
                             {msg.sender._id === currentUser?.id && (
                               <span className="message-status">
-                                {msg.isRead ? "✓✓" : "✓"}
+                                {msg.isRead ? "Read" : "Sent"}
                               </span>
                             )}
                           </div>
@@ -609,10 +599,8 @@ export default function MessagesClient() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
                 {isItemResolved ? (
                   <div className="chat-closed-notice">
-                    <div className="notice-icon">🔒</div>
                     <div className="notice-content">
                       <h4>This conversation is closed</h4>
                       <p>
@@ -635,7 +623,7 @@ export default function MessagesClient() {
                       onClick={sendMessage}
                       disabled={!messageInput.trim() || !isConnected || sending}
                     >
-                      {sending ? "⏳" : "📤"}
+                      {sending ? "Sending" : "Send"}
                     </button>
                   </div>
                 )}
@@ -643,7 +631,6 @@ export default function MessagesClient() {
             )}
           </div>
         </div>
-      </div>
-    </>
+    </main>
   );
 }

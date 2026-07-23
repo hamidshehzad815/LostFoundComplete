@@ -5,7 +5,16 @@ export const dynamic = "force-dynamic";
 
 export default function MessagesPage() {
   return (
-    <Suspense fallback={<div style={{ padding: "2rem" }}>Loading messages...</div>}>
+    <Suspense
+      fallback={
+        <main className="page messages-page">
+          <div className="loading-state">
+            <div className="spinner" />
+            <p className="muted">Loading messages...</p>
+          </div>
+        </main>
+      }
+    >
       <MessagesClient />
     </Suspense>
   );

@@ -57,8 +57,6 @@ export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
     null,
   );
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [postType, setPostType] = useState<"lost" | "found">("lost");
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -105,11 +103,12 @@ export default function Dashboard() {
         const detailedData = await detailedResponse.json();
         setDashboardStats(detailedData.data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching dashboard data:", error);
+      const message = error instanceof Error ? error.message : "";
       if (
-        error.message?.includes("Token expired") ||
-        error.message?.includes("Authentication")
+        message.includes("Token expired") ||
+        message.includes("Authentication")
       ) {
         localStorage.removeItem("authToken");
         localStorage.removeItem("user");
@@ -124,26 +123,27 @@ export default function Dashboard() {
     router.push(`/post?type=${type}`);
   };
 
+  const formatLabel = (value?: string) =>
+    value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
+
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="spinner"></div>
-        <p>Loading your dashboard...</p>
+      <div className="page dashboard-loading">
+        <div className="spinner" />
+        <p className="muted">Loading your dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      {/* Back Button */}
-      <button className="back-btn" onClick={() => router.back()}>
-        ← Back
-      </button>
+    <main className="page">
+      <div className="page-wide dashboard-shell">
+        <button className="btn btn-ghost btn-sm dashboard-back" onClick={() => router.back()}>
+          Back
+        </button>
 
-      {/* Header Section */}
-      <div className="dashboard-header">
-        <div className="header-content">
-          <div className="user-info">
+        <section className="dashboard-header surface">
+          <div className="dashboard-user">
             {dashboardStats?.user.profilePicture ? (
               <img
                 src={
@@ -153,160 +153,159 @@ export default function Dashboard() {
                 }
                 alt="Profile"
                 className="user-avatar"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  (
-                    e.target as HTMLImageElement
-                  ).nextElementSibling?.classList.remove("hidden");
-                }}
               />
             ) : (
               <div className="user-avatar-placeholder">
                 {dashboardStats?.user.username.charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <h1>{dashboardStats?.user.username}</h1>
-              <p className="user-subtitle">
-                Trust Score: {dashboardStats?.user.trustScore || 0} •
-                Recoveries: {dashboardStats?.user.recoveryCount || 0}
+            <div className="dashboard-intro">
+              <span className="eyebrow">Your dashboard</span>
+              <h1 className="display">{dashboardStats?.user.username || "Account"}</h1>
+              <p className="muted">
+                {dashboardStats?.user.email}
+                <span aria-hidden="true"> · </span>
+                Trust score {dashboardStats?.user.trustScore || 0}
+                <span aria-hidden="true"> · </span>
+                {dashboardStats?.user.recoveryCount || 0} recoveries
               </p>
+              {dashboardStats?.user.badges &&
+                dashboardStats.user.badges.length > 0 && (
+                  <div className="dashboard-badges">
+                    {dashboardStats.user.badges.map((badge, index) => (
+                      <span key={index} className="badge badge-neutral">
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
-          <div className="quick-actions">
+          <div className="dashboard-actions">
             <button
-              className="action-btn action-btn-lost"
+              className="btn btn-lost"
               onClick={() => handlePostClick("lost")}
             >
               Post Lost Item
             </button>
             <button
-              className="action-btn action-btn-found"
+              className="btn btn-found"
               onClick={() => handlePostClick("found")}
             >
               Post Found Item
             </button>
           </div>
-        </div>
+        </section>
 
-        {/* Badges */}
-        {dashboardStats?.user.badges &&
-          dashboardStats.user.badges.length > 0 && (
-            <div className="badges-container">
-              {dashboardStats.user.badges.map((badge, index) => (
-                <span key={index} className="badge">
-                  {badge}
-                </span>
-              ))}
-            </div>
-          )}
-      </div>
-
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-content">
+        <section className="stats-grid" aria-label="Dashboard statistics">
+          <div className="stat-card surface">
             <h2 className="stat-value">{quickStats?.totalItems || 0}</h2>
             <p className="stat-label">Total Posts</p>
           </div>
-        </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
+          <div className="stat-card surface">
             <h2 className="stat-value">{quickStats?.activeItems || 0}</h2>
             <p className="stat-label">Active</p>
           </div>
-        </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
+          <div className="stat-card surface">
             <h2 className="stat-value">{quickStats?.resolvedItems || 0}</h2>
             <p className="stat-label">Resolved</p>
           </div>
-        </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
+          <div className="stat-card surface">
             <h2 className="stat-value">
               {dashboardStats?.overview.lostItems || 0}
             </h2>
             <p className="stat-label">Lost</p>
           </div>
-        </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
+          <div className="stat-card surface">
             <h2 className="stat-value">
               {dashboardStats?.overview.foundItems || 0}
             </h2>
             <p className="stat-label">Found</p>
           </div>
-        </div>
 
-        <div className="stat-card">
-          <div className="stat-content">
+          <div className="stat-card surface">
             <h2 className="stat-value">{quickStats?.totalViews || 0}</h2>
             <p className="stat-label">Views</p>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Quick Insights Row */}
-      <div className="insights-row">
-        <div className="insight-card">
-          <span className="insight-label">Success Rate</span>
-          <span className="insight-value">
-            {dashboardStats?.successRate || 0}%
-          </span>
-          <div className="insight-bar">
-            <div
-              className="insight-bar-fill"
-              style={{ width: `${dashboardStats?.successRate || 0}%` }}
-            ></div>
+        <section>
+          <div className="dashboard-section-heading">
+            <div>
+              <h2 className="section-title">Insights</h2>
+              <p className="section-sub">
+                A concise view of recovery progress and current attention.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="insight-card">
-          <span className="insight-label">Avg Resolution</span>
-          <span className="insight-value">
-            {dashboardStats?.averageResolutionTime || 0} <small>days</small>
-          </span>
-        </div>
+          <div className="insights-row">
+            <div className="insight-card surface">
+              <span className="insight-label">Success Rate</span>
+              <span className="insight-value">
+                {dashboardStats?.successRate || 0}%
+              </span>
+              <div className="insight-bar">
+                <div
+                  className="insight-bar-fill"
+                  style={{ width: `${dashboardStats?.successRate || 0}%` }}
+                />
+              </div>
+            </div>
 
-        <div className="insight-card">
-          <span className="insight-label">Claims</span>
-          <span className="insight-value">
-            {quickStats?.pendingClaims || 0}
-          </span>
-        </div>
+            <div className="insight-card surface">
+              <span className="insight-label">Average Resolution</span>
+              <span className="insight-value">
+                {dashboardStats?.averageResolutionTime || 0} <small>days</small>
+              </span>
+            </div>
 
-        {dashboardStats && dashboardStats.overview.totalBookmarks > 0 && (
-          <div className="insight-card">
-            <span className="insight-label">Bookmarks</span>
-            <span className="insight-value">
-              {dashboardStats.overview.totalBookmarks}
-            </span>
+            <div className="insight-card surface">
+              <span className="insight-label">Pending Claims</span>
+              <span className="insight-value">
+                {quickStats?.pendingClaims || 0}
+              </span>
+            </div>
+
+            {dashboardStats && dashboardStats.overview.totalBookmarks > 0 && (
+              <div className="insight-card surface">
+                <span className="insight-label">Bookmarks</span>
+                <span className="insight-value">
+                  {dashboardStats.overview.totalBookmarks}
+                </span>
+              </div>
+            )}
+
+            {dashboardStats && dashboardStats.overview.totalRewards > 0 && (
+              <div className="insight-card surface">
+                <span className="insight-label">Rewards</span>
+                <span className="insight-value">
+                  Rs. {dashboardStats.overview.totalRewards}
+                </span>
+              </div>
+            )}
           </div>
-        )}
+        </section>
 
-        {dashboardStats && dashboardStats.overview.totalRewards > 0 && (
-          <div className="insight-card">
-            <span className="insight-label">Rewards</span>
-            <span className="insight-value">
-              Rs. {dashboardStats.overview.totalRewards}
-            </span>
+        <section className="activity-section surface">
+          <div className="dashboard-section-heading">
+            <div>
+              <h2 className="section-title">Recent Activity</h2>
+              <p className="section-sub">
+                Recent posts and their recovery signals.
+              </p>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Recent Activity */}
-      {dashboardStats?.recentActivity &&
-        dashboardStats.recentActivity.length > 0 && (
-          <div className="activity-section">
-            <h3 className="section-title">Recent Activity</h3>
+          {dashboardStats?.recentActivity &&
+          dashboardStats.recentActivity.length > 0 ? (
             <div className="activity-list">
               {dashboardStats.recentActivity.map((activity) => (
-                <div
+                <button
                   key={activity.id}
                   className={`activity-item ${activity.type}`}
                   onClick={() => router.push(`/item/${activity.id}`)}
@@ -314,8 +313,12 @@ export default function Dashboard() {
                   <div className="activity-info">
                     <h4 className="activity-title">{activity.title}</h4>
                     <div className="activity-meta">
-                      <span className={`activity-type-tag ${activity.type}`}>
-                        {activity.type}
+                      <span
+                        className={`badge ${
+                          activity.type === "lost" ? "badge-lost" : "badge-found"
+                        }`}
+                      >
+                        {formatLabel(activity.type)}
                       </span>
                       <span>{activity.category}</span>
                       <span>
@@ -328,24 +331,35 @@ export default function Dashboard() {
                       <span>{activity.views} views</span>
                       <span>{activity.claimsCount} claims</span>
                     </div>
-                    <div className={`activity-status ${activity.status}`}>
-                      {activity.status}
-                    </div>
+                    <span
+                      className={`badge ${
+                        activity.status === "active"
+                          ? "badge-active"
+                          : activity.status === "resolved"
+                            ? "badge-resolved"
+                            : "badge-neutral"
+                      }`}
+                    >
+                      {formatLabel(activity.status)}
+                    </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
-          </div>
-        )}
-
-      {/* Empty State */}
-      {(!dashboardStats?.recentActivity ||
-        dashboardStats.recentActivity.length === 0) && (
-        <div className="empty-state">
-          <h3>No Activity Yet</h3>
-          <p>Post your first lost or found item to get started!</p>
-        </div>
-      )}
-    </div>
+          ) : (
+            <div className="empty-state">
+              <h3>No activity yet</h3>
+              <p>Post your first lost or found item to begin tracking activity.</p>
+              <button
+                className="btn btn-primary"
+                onClick={() => router.push("/post")}
+              >
+                Create a post
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

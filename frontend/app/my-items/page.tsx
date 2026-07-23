@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getAuthToken } from "@/lib/auth";
-import Navigation from "@/components/Navigation";
 import { API_ENDPOINTS, withApiBase } from "@/lib/config";
 import "./my-items.css";
 
@@ -240,7 +239,6 @@ export default function MyItems() {
       );
 
       if (response.ok) {
-        const data = await response.json();
         setItems(
           items.map((item) =>
             item._id === selectedItem ? { ...item, status: "resolved" } : item,
@@ -276,39 +274,35 @@ export default function MyItems() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="explore-container">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading your items...</p>
-          </div>
+      <main className="page">
+        <div className="my-items-loading">
+          <div className="spinner" />
+          <p className="muted">Loading your items...</p>
         </div>
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="explore-container">
-        {/* Back Button */}
-        <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+    <main className="page">
+      <div className="page-wide my-items-shell">
+        <button className="btn btn-ghost btn-sm my-items-back" onClick={() => router.back()}>
+          Back
         </button>
 
-        {/* Header */}
-        <div className="explore-header">
-          <div className="header-content">
-            <h1>📦 My Items</h1>
-            <p>Manage your posted lost and found items</p>
+        <section className="my-items-header surface">
+          <div>
+            <span className="eyebrow">Manage</span>
+            <h1 className="display">My Items</h1>
+            <p className="muted">Manage your posted lost and found items.</p>
           </div>
-        </div>
+          <button className="btn btn-primary" onClick={() => router.push("/post")}>
+            Post an Item
+          </button>
+        </section>
 
-        {/* Search Bar */}
-        <div className="search-section">
+        <section className="search-section surface">
           <div className="search-bar">
-            <span className="search-icon">🔎</span>
             <input
               type="text"
               placeholder="Search your items..."
@@ -320,33 +314,33 @@ export default function MyItems() {
                 className="clear-search"
                 onClick={() => setSearchTerm("")}
               >
-                ✕
+                Clear
               </button>
             )}
           </div>
           <button
-            className="filter-toggle"
+            className="btn btn-secondary filter-toggle"
             onClick={() => setShowFilters(!showFilters)}
           >
-            🎛️ Filters
+            Filters
             {(filterType !== "all" ||
               filterCategory !== "All Categories" ||
               filterStatus !== "all") && (
-              <span className="filter-badge">•</span>
+              <span className="filter-badge">Active</span>
             )}
           </button>
-        </div>
+        </section>
 
-        {/* Filters */}
         {showFilters && (
-          <div className="filters-section">
+          <section className="filters-section surface">
             <div className="filters-grid">
-              {/* Type Filter */}
-              <div className="filter-group">
+              <div className="field">
                 <label>Type</label>
                 <select
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as any)}
+                  onChange={(e) =>
+                    setFilterType(e.target.value as "all" | "lost" | "found")
+                  }
                 >
                   <option value="all">All Types</option>
                   <option value="lost">Lost</option>
@@ -354,8 +348,7 @@ export default function MyItems() {
                 </select>
               </div>
 
-              {/* Category Filter */}
-              <div className="filter-group">
+              <div className="field">
                 <label>Category</label>
                 <select
                   value={filterCategory}
@@ -369,8 +362,7 @@ export default function MyItems() {
                 </select>
               </div>
 
-              {/* Status Filter */}
-              <div className="filter-group">
+              <div className="field">
                 <label>Status</label>
                 <select
                   value={filterStatus}
@@ -383,8 +375,7 @@ export default function MyItems() {
                 </select>
               </div>
 
-              {/* Sort */}
-              <div className="filter-group">
+              <div className="field">
                 <label>Sort By</label>
                 <select
                   value={sortBy}
@@ -398,46 +389,42 @@ export default function MyItems() {
               </div>
             </div>
 
-            {/* Clear Filters */}
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              🔄 Clear All Filters
+            <button className="btn btn-secondary btn-sm clear-filters-btn" onClick={clearFilters}>
+              Clear All Filters
             </button>
-          </div>
+          </section>
         )}
 
-        {/* Items Grid */}
         {filteredItems.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📭</div>
             <h2>No Items Found</h2>
             <p>
               {items.length === 0
-                ? "You haven't posted any items yet"
+                ? "You have not posted any items yet"
                 : "No items match your current filters"}
             </p>
             {items.length === 0 ? (
               <button
-                className="primary-btn"
+                className="btn btn-primary"
                 onClick={() => router.push("/post")}
               >
                 Post Your First Item
               </button>
             ) : (
-              <button className="secondary-btn" onClick={clearFilters}>
+              <button className="btn btn-secondary" onClick={clearFilters}>
                 Clear Filters
               </button>
             )}
           </div>
         ) : (
-          <div className="items-grid">
+          <section className="item-grid">
             {filteredItems.map((item) => (
-              <div
+              <article
                 key={item._id}
                 className={`item-card ${item.type}`}
                 onClick={() => handleCardClick(item._id)}
               >
-                {/* Image */}
-                <div className="card-image">
+                <div className="item-card-image">
                   <img
                     src={
                       item.images[0]
@@ -450,33 +437,46 @@ export default function MyItems() {
                         "/placeholder-image.svg";
                     }}
                   />
-                  <div className={`card-type-badge ${item.type}`}>
-                    {item.type === "lost" ? "🔴 Lost" : "🟢 Found"}
+                  <div
+                    className={`badge ${
+                      item.type === "lost" ? "badge-lost" : "badge-found"
+                    } my-item-type`}
+                  >
+                    {item.type === "lost" ? "Lost" : "Found"}
                   </div>
                   {item.reward && item.reward > 0 && (
-                    <div className="reward-badge">💰 Rs. {item.reward}</div>
+                    <div className="reward-badge">Reward Rs. {item.reward}</div>
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="card-content">
-                  <h3 className="card-title">{item.title}</h3>
+                <div className="item-card-body">
+                  <div className="my-item-title-row">
+                    <h3 className="item-card-title">{item.title}</h3>
+                    <span
+                      className={`badge ${
+                        item.status === "active"
+                          ? "badge-active"
+                          : item.status === "resolved"
+                            ? "badge-resolved"
+                            : "badge-neutral"
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
                   <p className="card-description">{item.description}</p>
 
                   <div className="card-meta">
                     <div className="meta-item">
-                      <span className="meta-icon">📂</span>
                       <span>{item.category}</span>
                     </div>
                     <div className="meta-item">
-                      <span className="meta-icon">📍</span>
                       <span>
                         {item.location.area}, {item.location.city}
                       </span>
                     </div>
                   </div>
 
-                  {/* Footer */}
                   <div className="card-footer">
                     <div className="poster-info">
                       <div className="poster-avatar">
@@ -494,7 +494,11 @@ export default function MyItems() {
                             }}
                           />
                         ) : (
-                          <span>👤</span>
+                          <span>
+                            {item.postedBy?.username
+                              ?.charAt(0)
+                              .toUpperCase() || "U"}
+                          </span>
                         )}
                       </div>
                       <span className="poster-name">
@@ -502,52 +506,66 @@ export default function MyItems() {
                       </span>
                     </div>
                     <div className="card-stats">
-                      <span className="stat">👁️ {item.views}</span>
+                      <span className="stat">{item.views} views</span>
                       <span className="stat time">
                         {formatDate(item.createdAt)}
                       </span>
                     </div>
                   </div>
+
+                  <div className="item-actions">
+                    {item.status !== "resolved" && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={(e) => handleResolveClick(e, item._id)}
+                      >
+                        Mark Resolved
+                      </button>
+                    )}
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={(e) => handleDeleteClick(e, item._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </article>
             ))}
-          </div>
+          </section>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div
-          className="modal-overlay"
+          className="modal-backdrop"
           onClick={() => !actionLoading && setShowDeleteModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>🗑️ Delete Item</h2>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="my-modal-header">
+              <h3>Delete Item</h3>
               <button
-                className="close-btn"
+                className="btn btn-ghost btn-sm"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={actionLoading}
               >
-                ✕
+                Close
               </button>
             </div>
-            <div className="modal-body">
-              <p>
-                Are you sure you want to delete this item? This action cannot be
-                undone.
-              </p>
-            </div>
-            <div className="modal-footer">
+            <p>
+              Are you sure you want to delete this item? This action cannot be
+              undone.
+            </p>
+            <div className="modal-actions">
               <button
-                className="modal-btn cancel"
+                className="btn btn-secondary"
                 onClick={() => setShowDeleteModal(false)}
                 disabled={actionLoading}
               >
                 Cancel
               </button>
               <button
-                className="modal-btn confirm"
+                className="btn btn-danger"
                 onClick={confirmDelete}
                 disabled={actionLoading}
               >
@@ -558,39 +576,36 @@ export default function MyItems() {
         </div>
       )}
 
-      {/* Resolve Confirmation Modal */}
       {showResolveModal && (
         <div
-          className="modal-overlay"
+          className="modal-backdrop"
           onClick={() => !actionLoading && setShowResolveModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>✓ Mark as Resolved</h2>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="my-modal-header">
+              <h3>Mark as Resolved</h3>
               <button
-                className="close-btn"
+                className="btn btn-ghost btn-sm"
                 onClick={() => setShowResolveModal(false)}
                 disabled={actionLoading}
               >
-                ✕
+                Close
               </button>
             </div>
-            <div className="modal-body">
-              <p>
-                Mark this item as resolved? This will close all related chats
-                and users won't be able to send new messages about this item.
-              </p>
-            </div>
-            <div className="modal-footer">
+            <p>
+              Mark this item as resolved? This will close all related chats and
+              users will not be able to send new messages about this item.
+            </p>
+            <div className="modal-actions">
               <button
-                className="modal-btn cancel"
+                className="btn btn-secondary"
                 onClick={() => setShowResolveModal(false)}
                 disabled={actionLoading}
               >
                 Cancel
               </button>
               <button
-                className="modal-btn resolve"
+                className="btn btn-primary"
                 onClick={confirmResolve}
                 disabled={actionLoading}
               >
@@ -600,6 +615,6 @@ export default function MyItems() {
           </div>
         </div>
       )}
-    </>
+    </main>
   );
 }

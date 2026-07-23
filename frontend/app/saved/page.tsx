@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getAuthToken } from "@/lib/auth";
-import Navigation from "@/components/Navigation";
 import { API_ENDPOINTS, withApiBase } from "@/lib/config";
 import "./saved.css";
 
@@ -120,53 +119,55 @@ export default function SavedItems() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="saved-container">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading your saved items...</p>
-          </div>
+      <main className="page">
+        <div className="saved-loading">
+          <div className="spinner" />
+          <p className="muted">Loading your saved items...</p>
         </div>
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="saved-container">
-        <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+    <main className="page">
+      <div className="page-wide saved-shell">
+        <button className="btn btn-ghost btn-sm saved-back" onClick={() => router.back()}>
+          Back
         </button>
 
-        {/* Header */}
-        <div className="saved-header">
-          <div className="header-content">
-            <h1>🔖 Saved Items</h1>
-            <p>Items you've bookmarked for later</p>
+        <section className="saved-header surface">
+          <div>
+            <span className="eyebrow">Saved</span>
+            <h1 className="display">Saved Items</h1>
+            <p className="muted">Items you have bookmarked for later review.</p>
           </div>
-        </div>
+          <span className="badge badge-neutral">{items.length} saved</span>
+        </section>
 
-        {/* Filters */}
-        <div className="filters-section">
+        <section className="saved-filters surface" aria-label="Saved item filters">
           <div className="filter-group">
-            <label>Type:</label>
+            <span className="filter-label">Type</span>
             <div className="filter-buttons">
               <button
-                className={filter === "all" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  filter === "all" ? "active" : ""
+                }`}
                 onClick={() => setFilter("all")}
               >
                 All
               </button>
               <button
-                className={filter === "lost" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  filter === "lost" ? "active" : ""
+                }`}
                 onClick={() => setFilter("lost")}
               >
                 Lost
               </button>
               <button
-                className={filter === "found" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  filter === "found" ? "active" : ""
+                }`}
                 onClick={() => setFilter("found")}
               >
                 Found
@@ -175,57 +176,59 @@ export default function SavedItems() {
           </div>
 
           <div className="filter-group">
-            <label>Status:</label>
+            <span className="filter-label">Status</span>
             <div className="filter-buttons">
               <button
-                className={statusFilter === "all" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  statusFilter === "all" ? "active" : ""
+                }`}
                 onClick={() => setStatusFilter("all")}
               >
                 All
               </button>
               <button
-                className={statusFilter === "active" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  statusFilter === "active" ? "active" : ""
+                }`}
                 onClick={() => setStatusFilter("active")}
               >
                 Active
               </button>
               <button
-                className={statusFilter === "resolved" ? "active" : ""}
+                className={`btn btn-sm saved-filter-button ${
+                  statusFilter === "resolved" ? "active" : ""
+                }`}
                 onClick={() => setStatusFilter("resolved")}
               >
                 Resolved
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Items Count */}
-        <div className="items-count">
-          <span>{items.length} saved items</span>
-        </div>
-
-        {/* Items Grid */}
         {items.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🔖</div>
             <h2>No saved items yet</h2>
             <p>
-              Start exploring and bookmark items you're interested in to see
-              them here!
+              Start exploring and bookmark items you want to revisit.
             </p>
             <button
-              className="btn-explore"
+              className="btn btn-primary"
               onClick={() => router.push("/explore")}
             >
               Explore Items
             </button>
           </div>
         ) : (
-          <div className="items-grid">
+          <section>
+            <div className="saved-count muted">
+              Showing {items.length} saved {items.length === 1 ? "item" : "items"}
+            </div>
+            <div className="item-grid">
             {items.map((item) => (
-              <div key={item._id} className="item-card">
+              <article key={item._id} className="item-card">
                 <div
-                  className="item-image"
+                  className="item-card-image"
                   onClick={() => handleCardClick(item._id)}
                 >
                   <img
@@ -240,26 +243,30 @@ export default function SavedItems() {
                         "/placeholder-image.svg";
                     }}
                   />
-                  <div className={`type-badge ${item.type}`}>
-                    {item.type === "lost" ? "🔴 LOST" : "🟢 FOUND"}
+                  <div
+                    className={`badge ${
+                      item.type === "lost" ? "badge-lost" : "badge-found"
+                    } saved-type-badge`}
+                  >
+                    {item.type === "lost" ? "Lost" : "Found"}
                   </div>
                   <button
-                    className="remove-bookmark-btn"
+                    className="btn btn-secondary btn-sm saved-remove"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveBookmark(item._id);
                     }}
                     title="Remove bookmark"
                   >
-                    ❌
+                    Remove
                   </button>
                 </div>
 
                 <div
-                  className="item-details"
+                  className="item-card-body"
                   onClick={() => handleCardClick(item._id)}
                 >
-                  <h3>{item.title}</h3>
+                  <h3 className="item-card-title">{item.title}</h3>
                   <p className="item-description">
                     {item.description.length > 100
                       ? `${item.description.substring(0, 100)}...`
@@ -267,23 +274,21 @@ export default function SavedItems() {
                   </p>
 
                   <div className="item-meta">
-                    <span className="category">📂 {item.category}</span>
+                    <span>{item.category}</span>
                     <span className="location">
-                      📍 {item.location.area}, {item.location.city}
+                      {item.location.area}, {item.location.city}
                     </span>
-                    <span className="date">
-                      🕒 {formatDate(item.createdAt)}
-                    </span>
+                    <span>{formatDate(item.createdAt)}</span>
                   </div>
 
                   {item.reward && item.reward.amount > 0 && (
                     <div className="reward-badge">
-                      💰 Reward: {item.reward.currency} {item.reward.amount}
+                      Reward: {item.reward.currency} {item.reward.amount}
                     </div>
                   )}
 
                   <div className="item-footer">
-                    <div className="poster-info">
+                    <div className="saved-poster">
                       {item.postedBy.profilePicture ? (
                         <img
                           src={
@@ -292,25 +297,34 @@ export default function SavedItems() {
                               : withApiBase(item.postedBy.profilePicture)
                           }
                           alt={item.postedBy.username}
-                          className="poster-avatar"
+                          className="saved-poster-avatar"
                         />
                       ) : (
-                        <div className="poster-avatar-placeholder">
+                        <div className="saved-poster-avatar">
                           {item.postedBy.username.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <span>{item.postedBy.username}</span>
                     </div>
-                    <span className={`status-badge ${item.status}`}>
+                    <span
+                      className={`badge ${
+                        item.status === "active"
+                          ? "badge-active"
+                          : item.status === "resolved"
+                            ? "badge-resolved"
+                            : "badge-neutral"
+                      }`}
+                    >
                       {item.status}
                     </span>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
-          </div>
+            </div>
+          </section>
         )}
       </div>
-    </>
+    </main>
   );
 }
