@@ -78,12 +78,13 @@ app.use(
   }),
 );
 
-app.get("/healthz", async (req, res) => {
+const healthHandler = async (req, res) => {
   const mongoState = mongoose.connection.readyState;
   const redisHealth = await getRedisHealth();
 
   res.status(200).json({
     status: "ok",
+    service: "lost-found-api",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     dependencies: {
@@ -94,7 +95,11 @@ app.get("/healthz", async (req, res) => {
       redis: redisHealth,
     },
   });
-});
+};
+
+// Render probes HEAD/GET / by default; keep /healthz as the explicit check path.
+app.get("/", healthHandler);
+app.get("/healthz", healthHandler);
 
 app.use("/auth/api", apiLimiter);
 app.use("/api", apiLimiter);

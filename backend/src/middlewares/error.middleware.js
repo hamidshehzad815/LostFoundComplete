@@ -12,12 +12,17 @@ export const errorHandler = (err, req, res, next) => {
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  console.error("Error:", {
-    requestId: req.id,
-    message: err.message,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-    statusCode: error.statusCode,
-  });
+  // Avoid noisy stack dumps for expected 404 probes (e.g. /favicon.ico).
+  if (error.statusCode === 404) {
+    console.warn(`[${req.id || "-"}] ${req.method} ${req.originalUrl} 404`);
+  } else {
+    console.error("Error:", {
+      requestId: req.id,
+      message: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      statusCode: error.statusCode,
+    });
+  }
 
   if (err.name === "CastError") {
     const message = "Resource not found";

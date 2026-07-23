@@ -11,6 +11,8 @@
 ## Network and TLS
 - Terminate TLS at a reverse proxy (Nginx/Caddy) or a load balancer.
 - Ensure `X-Forwarded-Proto` and `X-Forwarded-For` are forwarded; Express already trusts one proxy hop.
+- On Render, set Health Check Path to `/healthz` (or `/`). Both return `200` when the API is up.
+- Set `NODE_ENV=production` on Render.
 
 ## CORS and CSRF
 - Set `CORS_ORIGINS` and `FRONTEND_URL` to your real domain.
