@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setAuthToken, setUser } from "@/lib/auth";
 import { API_ENDPOINTS } from "@/lib/config";
+import "../auth.css";
 
 export default function LoginClient() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -16,11 +17,9 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (searchParams.get("verified") === "true") {
-      setSuccess("Email verified successfully! You can now login.");
+      setSuccess("Email verified successfully. You can log in now.");
     } else if (searchParams.get("signup") === "success") {
-      setSuccess(
-        "Account created! Please check your email to verify your account.",
-      );
+      setSuccess("Account created. Check your email to verify before logging in.");
     }
   }, [searchParams]);
 
@@ -50,299 +49,68 @@ export default function LoginClient() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem 1rem",
-        background: "var(--yellow)",
-        paddingTop: "6rem",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "500px",
-          backgroundColor: "var(--white)",
-          border: "6px solid var(--black)",
-          boxShadow: "10px 10px 0 var(--black)",
-          padding: "3rem",
-          transform: "rotate(-0.5deg)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-          <div style={{ fontSize: "4rem", marginBottom: "1rem", fontWeight: 900 }}>👋</div>
-          <h1
-            style={{
-              fontSize: "2.5rem",
-              fontWeight: 900,
-              color: "var(--black)",
-              marginBottom: "0.75rem",
-              textTransform: "uppercase",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            WELCOME BACK
-          </h1>
-          <p style={{ color: "var(--black)", fontSize: "1rem", fontWeight: 700 }}>
-            Login to continue helping the community
-          </p>
-        </div>
+    <div className="auth-page">
+      <div className="auth-card">
+        <p className="eyebrow">Lost & Found</p>
+        <h1>Welcome back</h1>
+        <p className="auth-lead">Log in to manage listings and messages.</p>
 
-        {success && (
-          <div
-            style={{
-              padding: "1.25rem",
-              backgroundColor: "var(--green)",
-              border: "4px solid var(--black)",
-              boxShadow: "4px 4px 0 var(--black)",
-              color: "var(--black)",
-              marginBottom: "1.5rem",
-              fontSize: "0.9rem",
-              textAlign: "center",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            {success}
-          </div>
-        )}
+        {success && <div className="alert alert-success">{success}</div>}
+        {error && <div className="alert alert-error" style={{ marginTop: success ? "0.75rem" : 0 }}>{error}</div>}
 
-        {error && (
-          <div
-            style={{
-              padding: "1.25rem",
-              backgroundColor: "var(--red)",
-              border: "4px solid var(--black)",
-              boxShadow: "4px 4px 0 var(--black)",
-              color: "var(--white)",
-              marginBottom: "1.5rem",
-              fontSize: "0.9rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
-        >
-          <div>
-            <label
-              htmlFor="email"
-              style={{
-                display: "block",
-                marginBottom: "0.75rem",
-                fontWeight: 900,
-                fontSize: "0.9rem",
-                color: "var(--black)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Email Address
-            </label>
+        <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: "1.25rem" }}>
+          <div className="field">
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
               required
+              autoComplete="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "1rem 1.25rem",
-                border: "4px solid var(--black)",
-                fontSize: "1rem",
-                fontWeight: 700,
-                outline: "none",
-                backgroundColor: "var(--white)",
-              }}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              style={{
-                display: "block",
-                marginBottom: "0.75rem",
-                fontWeight: 900,
-                fontSize: "0.9rem",
-                color: "var(--black)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Password
-            </label>
+          <div className="field">
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
               required
+              autoComplete="current-password"
               value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "1rem 1.25rem",
-                border: "4px solid var(--black)",
-                fontSize: "1rem",
-                fontWeight: 700,
-                outline: "none",
-                backgroundColor: "var(--white)",
-              }}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="••••••••"
             />
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              fontSize: "0.85rem",
-            }}
-          >
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              <input
-                type="checkbox"
-                style={{
-                  width: "1.25rem",
-                  height: "1.25rem",
-                  cursor: "pointer",
-                  border: "3px solid var(--black)",
-                }}
-              />
-              <span style={{ color: "var(--black)" }}>REMEMBER ME</span>
+          <div className="auth-meta">
+            <label>
+              <input type="checkbox" />
+              Remember me
             </label>
-            <Link
-              href="/forgot-password"
-              style={{
-                color: "var(--black)",
-                fontWeight: 700,
-                textDecoration: "underline",
-                textDecorationThickness: "2px",
-                textUnderlineOffset: "3px",
-              }}
-            >
-              FORGOT PASSWORD?
-            </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "1.25rem",
-              backgroundColor: "var(--black)",
-              color: "var(--white)",
-              border: "4px solid var(--black)",
-              fontSize: "1.1rem",
-              fontWeight: 900,
-              cursor: loading ? "not-allowed" : "pointer",
-              marginTop: "0.5rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              boxShadow: "6px 6px 0 var(--yellow)",
-              transform: "rotate(-0.5deg)",
-            }}
-          >
-            {loading ? "LOGGING IN..." : "LOGIN"}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? "Signing in…" : "Log in"}
           </button>
         </form>
 
-        <div
-          style={{
-            margin: "2rem 0 1.5rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <div
-            style={{ flex: 1, height: "3px", backgroundColor: "var(--black)" }}
-          ></div>
-          <span
-            style={{
-              color: "var(--black)",
-              fontSize: "0.9rem",
-              fontWeight: 900,
-              letterSpacing: "0.1em",
-            }}
-          >
-            OR
-          </span>
-          <div
-            style={{ flex: 1, height: "3px", backgroundColor: "var(--black)" }}
-          ></div>
-        </div>
+        <div className="divider">or</div>
 
-        <a
-          href={API_ENDPOINTS.GOOGLE_AUTH}
-          style={{
-            width: "100%",
-            padding: "1.25rem",
-            backgroundColor: "var(--white)",
-            color: "var(--black)",
-            border: "4px solid var(--black)",
-            fontSize: "1rem",
-            fontWeight: 900,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.75rem",
-            textDecoration: "none",
-            textTransform: "uppercase",
-            letterSpacing: "0.02em",
-            boxShadow: "5px 5px 0 var(--black)",
-          }}
-        >
-          <span style={{ fontSize: "1.25rem" }}>🔐</span>
+        <a href={API_ENDPOINTS.GOOGLE_AUTH} className="google-btn">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.5-.4-3.5z" />
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z" />
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.3 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.1-3.5 5.5-6.5 6.6l.1.1 6.2 5.2C36.8 41.2 44 36 44 24c0-1.3-.1-2.5-.4-3.5z" />
+          </svg>
           Continue with Google
         </a>
 
-        <div style={{ marginTop: "2.5rem", textAlign: "center" }}>
-          <p
-            style={{
-              color: "var(--black)",
-              fontSize: "0.95rem",
-              fontWeight: 700,
-            }}
-          >
-            DON'T HAVE AN ACCOUNT?{" "}
-            <Link
-              href="/signup"
-              style={{
-                color: "var(--black)",
-                fontWeight: 900,
-                textDecoration: "underline",
-                textDecorationThickness: "3px",
-                textUnderlineOffset: "3px",
-                textDecorationColor: "var(--purple)",
-              }}
-            >
-              SIGN UP HERE
-            </Link>
-          </p>
-        </div>
+        <p className="auth-foot">
+          New here? <Link href="/signup">Create an account</Link>
+        </p>
       </div>
     </div>
   );

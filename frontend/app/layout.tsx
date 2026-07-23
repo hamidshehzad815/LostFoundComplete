@@ -4,9 +4,9 @@ import Navigation from "@/components/Navigation";
 import { SocketProvider } from "@/contexts/SocketContext";
 
 export const metadata: Metadata = {
-  title: "Lost & Found - Reunite with Your Belongings",
+  title: "Lost & Found — Reunite with what matters",
   description:
-    "A community platform to help people recover lost items and return found belongings to their owners.",
+    "A calm community platform to report lost items, share found belongings, and help people reconnect.",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
       <body>
         <SocketProvider>
           <Navigation />
-          {children}
+          <main>{children}</main>
         </SocketProvider>
       </body>
     </html>

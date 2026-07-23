@@ -11,7 +11,7 @@ import "./Navigation.css";
 export default function Navigation() {
   const [isAuth, setIsAuth] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function Navigation() {
   useEffect(() => {
     setIsAuth(isAuthenticated());
     setUser(getUser());
+    setMobileOpen(false);
 
     if (isAuthenticated()) {
       fetchUnreadCount();
@@ -75,17 +76,11 @@ export default function Navigation() {
         const data = await response.json();
         const count = data.data?.unreadCount || 0;
         setUnreadCount(count);
-        if (count === 0) {
-          setHasNewMessage(false);
-        }
+        if (count === 0) setHasNewMessage(false);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
     }
-  };
-
-  const handleMessagesClick = () => {
-    setHasNewMessage(false);
   };
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -93,58 +88,79 @@ export default function Navigation() {
     logout();
     setIsAuth(false);
     setUser(null);
+    setMobileOpen(false);
     router.push("/");
   };
 
+  const navClass = (href: string) =>
+    `nav-link${pathname === href || pathname.startsWith(href + "/") ? " active" : ""}`;
+
   return (
     <nav className="navbar">
-      <div className="navbar-container">
-        <Link href="/" className="navbar-logo">
-          <span className="navbar-icon">🔍</span>
-          Lost & Found
+      <div className="navbar-inner">
+        <Link href="/" className="brand" onClick={() => setMobileOpen(false)}>
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-text">Lost & Found</span>
         </Link>
 
-        <div className="navbar-menu">
+        <button
+          type="button"
+          className={`nav-toggle${mobileOpen ? " open" : ""}`}
+          aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <div className={`nav-panel${mobileOpen ? " open" : ""}`}>
           {isAuth ? (
             <>
-              <Link href="/dashboard" className="nav-link">
-                Dashboard
-              </Link>
-              <Link href="/explore" className="nav-link">
-                Explore
-              </Link>
-              <Link href="/saved" className="nav-link">
-                Saved
-              </Link>
-              <Link href="/my-items" className="nav-link">
-                My Items
-              </Link>
-              <Link
-                href="/messages"
-                className="nav-link messages-link"
-                onClick={handleMessagesClick}
-              >
-                Messages
-                {(hasNewMessage || unreadCount > 0) && (
-                  <span className="nav-notification-dot"></span>
-                )}
-              </Link>
-              <Link href="/profile" className="nav-link">
-                Profile
-              </Link>
-              <button onClick={handleLogout} className="logout-btn">
-                Logout
-              </button>
+              <div className="nav-links">
+                <Link href="/dashboard" className={navClass("/dashboard")}>
+                  Dashboard
+                </Link>
+                <Link href="/explore" className={navClass("/explore")}>
+                  Explore
+                </Link>
+                <Link href="/saved" className={navClass("/saved")}>
+                  Saved
+                </Link>
+                <Link href="/my-items" className={navClass("/my-items")}>
+                  My Items
+                </Link>
+                <Link
+                  href="/messages"
+                  className={`${navClass("/messages")} messages-link`}
+                  onClick={() => setHasNewMessage(false)}
+                >
+                  Messages
+                  {(hasNewMessage || unreadCount > 0) && (
+                    <span className="nav-dot" />
+                  )}
+                </Link>
+                <Link href="/profile" className={navClass("/profile")}>
+                  Profile
+                </Link>
+              </div>
+              <div className="nav-actions">
+                <span className="nav-user">{user?.username}</span>
+                <button type="button" onClick={handleLogout} className="btn btn-ghost btn-sm">
+                  Log out
+                </button>
+              </div>
             </>
           ) : (
-            <>
-              <Link href="/login" className="login-link">
-                Login
+            <div className="nav-actions guest">
+              <Link href="/login" className="btn btn-ghost btn-sm">
+                Log in
               </Link>
-              <Link href="/signup" className="signup-link">
-                Sign Up
+              <Link href="/signup" className="btn btn-primary btn-sm">
+                Sign up
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

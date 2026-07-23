@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import LoginClient from "./LoginClient";
+import "../auth.css";
 
 export const dynamic = "force-dynamic";
 
@@ -7,18 +8,11 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem 1rem",
-            background: "var(--yellow)",
-            paddingTop: "6rem",
-          }}
-        >
-          <p style={{ fontWeight: 800 }}>Loading login...</p>
+        <div className="auth-page">
+          <div className="auth-card" style={{ textAlign: "center" }}>
+            <div className="spinner" style={{ margin: "0 auto 1rem" }} />
+            <p className="muted">Loading…</p>
+          </div>
         </div>
       }
     >
