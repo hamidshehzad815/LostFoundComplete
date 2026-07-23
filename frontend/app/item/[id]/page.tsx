@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth";
-import Navigation from "@/components/Navigation";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useSocket } from "@/contexts/SocketContext";
+import { isAuthenticated } from "@/lib/auth";
 import { API_ENDPOINTS, withApiBase } from "@/lib/config";
 import "./item.css";
 
@@ -41,7 +41,7 @@ interface Item {
   status: string;
   views: number;
   bookmarks: string[];
-  claims: any[];
+  claims: unknown[];
   contactPreferences: {
     email: boolean;
     phone: boolean;
@@ -97,11 +97,11 @@ export default function ItemDetail() {
           "Failed to fetch item:",
           errorData?.message || response.statusText,
         );
-        setItem(null); // Ensure item is null to show "Item not found" UI
+        setItem(null);
       }
     } catch (error) {
       console.error("Error fetching item:", error);
-      setItem(null); // Ensure item is null to show error UI
+      setItem(null);
     } finally {
       setLoading(false);
     }
@@ -203,7 +203,7 @@ export default function ItemDetail() {
       if (response.ok) {
         alert("Item marked as resolved!");
         setShowResolveModal(false);
-        fetchItemDetails(); // Refresh the item details
+        fetchItemDetails();
       } else {
         const error = await response.json();
         alert(error.message || "Failed to resolve item");
@@ -226,7 +226,7 @@ export default function ItemDetail() {
 
       if (response.ok) {
         alert("Item deleted successfully!");
-        router.push("/my-items"); // Redirect to my items page
+        router.push("/my-items");
       } else {
         const error = await response.json();
         alert(error.message || "Failed to delete item");
@@ -254,58 +254,63 @@ export default function ItemDetail() {
 
   if (loading) {
     return (
-      <>
-        <Navigation />
-        <div className="item-detail-container">
-          <div className="loading-state">
-            <div className="spinner"></div>
+      <main className="page item-detail-page">
+        <div className="page-wide">
+          <div className="surface item-loading" role="status">
+            <div className="spinner" aria-hidden />
             <p>Loading item details...</p>
           </div>
         </div>
-      </>
+      </main>
     );
   }
 
   if (!item) {
     return (
-      <>
-        <Navigation />
-        <div className="item-detail-container">
+      <main className="page item-detail-page">
+        <div className="page-wide">
           <div className="empty-state">
-            <h2>Item not found</h2>
-            <button onClick={() => router.push("/explore")}>
-              Back to Explore
+            <h3>Item not found</h3>
+            <p>This report may have been removed or is no longer available.</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => router.push("/explore")}
+            >
+              Back to explore
             </button>
           </div>
         </div>
-      </>
+      </main>
     );
   }
 
   const currentImage = item.images?.[selectedImage];
+  const imageCount = item.images?.length || 0;
+  const currentUserId = getCurrentUserId();
+  const isOwner = item.postedBy?._id === currentUserId;
 
   return (
-    <>
-      <Navigation />
-      <div className="item-detail-container">
-        {/* Back Button */}
-        <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+    <main className="page item-detail-page">
+      <div className="page-wide">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm item-back"
+          onClick={() => router.back()}
+        >
+          Back
         </button>
 
-        <div className="item-detail-content">
-          {/* Left Side - Image Gallery */}
-          <div className="item-gallery">
-            {/* Main Image */}
-            <div
+        <div className="item-detail-layout">
+          <section className="item-gallery" aria-label="Item photos">
+            <button
+              type="button"
               className="main-image-container"
               onClick={() => setShowImageModal(true)}
             >
               <img
                 src={
-                  currentImage
-                    ? withApiBase(currentImage)
-                    : "/placeholder-image.svg"
+                  currentImage ? withApiBase(currentImage) : "/placeholder-image.svg"
                 }
                 alt={item.title}
                 className="main-image"
@@ -313,130 +318,111 @@ export default function ItemDetail() {
                   (e.target as HTMLImageElement).src = "/placeholder-image.svg";
                 }}
               />
-              <div className="expand-icon">🔍</div>
-              <div className={`type-badge ${item.type}`}>
-                {item.type === "lost" ? "🔴 LOST ITEM" : "🟢 FOUND ITEM"}
-              </div>
-            </div>
+              <span
+                className={`badge image-type-badge ${item.type === "lost" ? "badge-lost" : "badge-found"}`}
+              >
+                {item.type === "lost" ? "Lost item" : "Found item"}
+              </span>
+              <span className="image-action">Open image</span>
+            </button>
 
-            {/* Thumbnail Gallery */}
-            {item.images.length > 1 && (
-              <div className="thumbnail-gallery">
+            {imageCount > 1 && (
+              <div className="thumbnail-gallery" aria-label="Photo thumbnails">
                 {item.images.map((image, index) => (
-                  <div
+                  <button
+                    type="button"
                     key={index}
                     className={`thumbnail ${selectedImage === index ? "active" : ""}`}
                     onClick={() => setSelectedImage(index)}
+                    aria-label={`View image ${index + 1}`}
                   >
                     <img
-                      src={
-                        image
-                          ? withApiBase(image)
-                          : "/placeholder-image.svg"
-                      }
+                      src={image ? withApiBase(image) : "/placeholder-image.svg"}
                       alt={`${item.title} ${index + 1}`}
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
                           "/placeholder-image.svg";
                       }}
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
 
-            {/* Image Counter */}
-            <div className="image-counter">
-              {selectedImage + 1} / {item.images.length}
-            </div>
-          </div>
+            <p className="image-counter">
+              {imageCount > 0
+                ? `${selectedImage + 1} of ${imageCount} images`
+                : "No images uploaded"}
+            </p>
+          </section>
 
-          {/* Right Side - Details */}
-          <div className="item-info">
-            {/* Status Badge */}
+          <section className="surface item-info" aria-labelledby="item-title">
             <div className="status-badges">
-              <span className={`status-badge ${item.status}`}>
+              <span
+                className={`badge ${item.status === "active" ? "badge-active" : "badge-resolved"}`}
+              >
                 {item.status}
               </span>
               {item.reward && item.reward.amount > 0 && (
-                <span className="reward-badge-large">
-                  💰 Reward: {item.reward.currency} {item.reward.amount}
+                <span className="badge badge-neutral">
+                  Reward {item.reward.currency} {item.reward.amount}
                 </span>
               )}
             </div>
 
-            {/* Title & Description */}
-            <h1 className="item-title">{item.title}</h1>
-            <p className="item-description">{item.description}</p>
+            <header className="item-heading">
+              <span className="eyebrow">{item.category}</span>
+              <h1 id="item-title" className="display item-title">
+                {item.title}
+              </h1>
+              <p>{item.description}</p>
+            </header>
 
-            {/* Quick Info Grid */}
-            <div className="quick-info-grid">
+            <dl className="quick-info-grid">
               <div className="info-item">
-                <span className="info-icon">📂</span>
-                <div className="info-content">
-                  <span className="info-label">Category</span>
-                  <span className="info-value">{item.category}</span>
-                  {item.subCategory && (
-                    <span className="info-sub">{item.subCategory}</span>
-                  )}
-                </div>
+                <dt>Category</dt>
+                <dd>{item.category}</dd>
+                {item.subCategory && <span>{item.subCategory}</span>}
               </div>
-
               <div className="info-item">
-                <span className="info-icon">📍</span>
-                <div className="info-content">
-                  <span className="info-label">Location</span>
-                  <span className="info-value">{item.location.area}</span>
-                  <span className="info-sub">{item.location.city}</span>
-                </div>
+                <dt>Location</dt>
+                <dd>{item.location.area || "Area not specified"}</dd>
+                <span>{item.location.city}</span>
               </div>
-
               <div className="info-item">
-                <span className="info-icon">📅</span>
-                <div className="info-content">
-                  <span className="info-label">Date</span>
-                  <span className="info-value">
-                    {new Date(item.date).toLocaleDateString()}
-                  </span>
-                </div>
+                <dt>Date</dt>
+                <dd>{new Date(item.date).toLocaleDateString()}</dd>
               </div>
-
               <div className="info-item">
-                <span className="info-icon">👁️</span>
-                <div className="info-content">
-                  <span className="info-label">Views</span>
-                  <span className="info-value">{item.views}</span>
-                </div>
+                <dt>Views</dt>
+                <dd>{item.views}</dd>
               </div>
-            </div>
+            </dl>
 
-            {/* Full Address */}
             {item.location.address && (
-              <div className="full-address">
-                <h3>📍 Full Address</h3>
+              <section className="detail-panel">
+                <h2>Full address</h2>
                 <p>{item.location.address}</p>
-              </div>
+              </section>
             )}
 
-            {/* Tags */}
             {item.tags && item.tags.length > 0 && (
-              <div className="tags-section">
-                <h3>🏷️ Tags</h3>
+              <section className="detail-panel">
+                <h2>Tags</h2>
                 <div className="tags-list">
                   {item.tags.map((tag, index) => (
-                    <span key={index} className="tag">
+                    <span key={index} className="badge badge-neutral">
                       {tag}
                     </span>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Posted By */}
-            <div className="posted-by-section">
-              <h3>Posted By</h3>
+            <section className="posted-by-section">
+              <h2>Posted by</h2>
               <div className="user-card">
-                <div className="user-avatar-large">
+                <div className="user-avatar-large" aria-hidden>
                   {item.postedBy?.profilePicture ? (
                     <img
                       src={
@@ -444,26 +430,24 @@ export default function ItemDetail() {
                           ? item.postedBy.profilePicture
                           : withApiBase(item.postedBy.profilePicture)
                       }
-                      alt={item.postedBy.username || "User"}
+                      alt=""
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   ) : (
-                    <span className="avatar-placeholder">
+                    <span>
                       {item.postedBy?.username?.charAt(0).toUpperCase() || "?"}
                     </span>
                   )}
                 </div>
                 <div className="user-info">
-                  <h4>{item.postedBy?.username || "Unknown User"}</h4>
-                  <div className="trust-score">
-                    ⭐ Trust Score: {item.postedBy?.trustScore || 0}/100
-                  </div>
+                  <h3>{item.postedBy?.username || "Unknown User"}</h3>
+                  <p>Trust score {item.postedBy?.trustScore || 0}/100</p>
                   {item.postedBy?.badges && item.postedBy.badges.length > 0 && (
                     <div className="badges">
                       {item.postedBy.badges.map((badge, index) => (
-                        <span key={index} className="badge">
+                        <span key={index} className="badge badge-neutral">
                           {badge}
                         </span>
                       ))}
@@ -471,13 +455,13 @@ export default function ItemDetail() {
                   )}
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Action Buttons */}
-            <div className="action-buttons">
-              {item.postedBy?._id === getCurrentUserId() ? (
+            <div className="action-buttons" aria-label="Item actions">
+              {isOwner ? (
                 <button
-                  className={`btn-primary ${item.status === "resolved" ? "btn-resolved" : ""}`}
+                  type="button"
+                  className={`btn btn-primary ${item.status === "resolved" ? "btn-resolved" : ""}`}
                   onClick={() => setShowResolveModal(true)}
                   disabled={item.status === "resolved"}
                   title={
@@ -486,18 +470,12 @@ export default function ItemDetail() {
                       : "Mark this item as resolved"
                   }
                 >
-                  <span className="btn-icon">
-                    {item.status === "resolved" ? "✔️" : "✅"}
-                  </span>
-                  <span className="btn-text">
-                    {item.status === "resolved"
-                      ? "Resolved"
-                      : "Mark as Resolved"}
-                  </span>
+                  {item.status === "resolved" ? "Resolved" : "Mark as resolved"}
                 </button>
               ) : (
                 <button
-                  className="btn-primary"
+                  type="button"
+                  className="btn btn-primary"
                   onClick={() => {
                     setShowClaimModal(true);
                   }}
@@ -508,36 +486,30 @@ export default function ItemDetail() {
                       : ""
                   }
                 >
-                  <span className="btn-icon">
-                    {item.type === "lost" ? "🔍" : "✨"}
-                  </span>
-                  <span className="btn-text">
-                    {item.type === "lost" ? "I Found This" : "This is Mine"}
-                  </span>
+                  {item.type === "lost" ? "I found this" : "This is mine"}
                 </button>
               )}
               <button
-                className={`btn-secondary ${isBookmarked ? "bookmarked" : ""}`}
+                type="button"
+                className={`btn btn-secondary ${isBookmarked ? "bookmarked" : ""}`}
                 onClick={handleBookmark}
                 title={isBookmarked ? "Remove bookmark" : "Save for later"}
               >
-                <span className="btn-icon">{isBookmarked ? "🔖" : "📌"}</span>
-                <span className="btn-text">
-                  {isBookmarked ? "Saved" : "Save"}
-                </span>
+                {isBookmarked ? "Saved" : "Save"}
               </button>
-              {item.postedBy?._id === getCurrentUserId() ? (
+              {isOwner ? (
                 <button
-                  className="btn-secondary btn-delete"
+                  type="button"
+                  className="btn btn-secondary btn-delete"
                   onClick={() => setShowDeleteModal(true)}
                   title="Delete this item"
                 >
-                  <span className="btn-icon">🗑️</span>
-                  <span className="btn-text">Delete</span>
+                  Delete
                 </button>
               ) : (
                 <button
-                  className="btn-secondary"
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() =>
                     router.push(
                       `/messages?to=${item.postedBy?._id}&item=${item._id}`,
@@ -546,55 +518,60 @@ export default function ItemDetail() {
                   title="Contact the poster"
                   disabled={!item.postedBy}
                 >
-                  <span className="btn-icon">💬</span>
-                  <span className="btn-text">Contact</span>
+                  Contact
                 </button>
               )}
             </div>
 
-            {/* Stats */}
-            <div className="item-stats">
-              <div className="stat-item">
-                <span>🔖 {item.bookmarks.length} bookmarks</span>
+            <dl className="item-stats">
+              <div>
+                <dt>Bookmarks</dt>
+                <dd>{item.bookmarks.length}</dd>
               </div>
-              <div className="stat-item">
-                <span>💬 {item.claims.length} claims</span>
+              <div>
+                <dt>Claims</dt>
+                <dd>{item.claims.length}</dd>
               </div>
-              <div className="stat-item">
-                <span>Posted {formatDate(item.createdAt)}</span>
+              <div>
+                <dt>Posted</dt>
+                <dd>{formatDate(item.createdAt)}</dd>
               </div>
-            </div>
-          </div>
+            </dl>
+          </section>
         </div>
 
-        {/* Claim Modal */}
         {showClaimModal && (
           <div
-            className="modal-overlay"
+            className="modal-backdrop item-modal-backdrop"
             onClick={() => setShowClaimModal(false)}
           >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>
-                  {item.type === "lost"
-                    ? "🔍 I Found This Item"
-                    : "✨ This is My Item"}
+            <section
+              className="modal item-dialog"
+              onClick={(e) => e.stopPropagation()}
+              aria-modal="true"
+              role="dialog"
+              aria-labelledby="claim-title"
+            >
+              <div className="item-modal-header">
+                <h2 id="claim-title">
+                  {item.type === "lost" ? "I found this item" : "This is my item"}
                 </h2>
                 <button
-                  className="close-btn"
+                  type="button"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setShowClaimModal(false)}
                 >
-                  ✕
+                  Close
                 </button>
               </div>
               <div className="modal-body">
                 <p className="modal-description">
                   {item.type === "lost"
-                    ? "Please provide details about where and when you found this item, and any identifying information."
-                    : "Please provide proof of ownership or identifying details that verify this item belongs to you."}
+                    ? "Share where and when you found it, plus any identifying details."
+                    : "Share ownership details that can help the poster verify your claim."}
                 </p>
                 <div className="claim-info-box">
-                  <strong>📋 What to include:</strong>
+                  <strong>What to include</strong>
                   <ul>
                     <li>
                       {item.type === "lost"
@@ -614,26 +591,30 @@ export default function ItemDetail() {
                     <li>Any additional proof or photos</li>
                   </ul>
                 </div>
-                <textarea
-                  value={claimMessage}
-                  onChange={(e) => setClaimMessage(e.target.value)}
-                  placeholder={
-                    item.type === "lost"
-                      ? "I found this item on [date] at [location]. The item is in [condition] and has [identifying features]..."
-                      : "This is my item. I can verify ownership with [specific details]. It has [unique features]..."
-                  }
-                  rows={6}
-                  className={
-                    claimMessage.trim().length > 0 ? "has-content" : ""
-                  }
-                />
+                <label className="field">
+                  <span>Claim message</span>
+                  <textarea
+                    value={claimMessage}
+                    onChange={(e) => setClaimMessage(e.target.value)}
+                    placeholder={
+                      item.type === "lost"
+                        ? "I found this item on [date] at [location]. The item is in [condition] and has [identifying features]..."
+                        : "This is my item. I can verify ownership with [specific details]. It has [unique features]..."
+                    }
+                    rows={6}
+                    className={
+                      claimMessage.trim().length > 0 ? "has-content" : ""
+                    }
+                  />
+                </label>
                 <div className="char-count">
                   {claimMessage.length} characters
                 </div>
               </div>
-              <div className="modal-footer">
+              <div className="modal-actions">
                 <button
-                  className="btn-cancel"
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => {
                     setShowClaimModal(false);
                     setClaimMessage("");
@@ -642,31 +623,38 @@ export default function ItemDetail() {
                   Cancel
                 </button>
                 <button
-                  className="btn-submit"
+                  type="button"
+                  className="btn btn-primary"
                   onClick={handleClaimSubmit}
                   disabled={!claimMessage.trim()}
                 >
-                  Submit Claim
+                  Submit claim
                 </button>
               </div>
-            </div>
+            </section>
           </div>
         )}
 
-        {/* Resolve Modal */}
         {showResolveModal && (
           <div
-            className="modal-overlay"
+            className="modal-backdrop item-modal-backdrop"
             onClick={() => setShowResolveModal(false)}
           >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>✅ Mark as Resolved</h2>
+            <section
+              className="modal item-dialog"
+              onClick={(e) => e.stopPropagation()}
+              aria-modal="true"
+              role="dialog"
+              aria-labelledby="resolve-title"
+            >
+              <div className="item-modal-header">
+                <h2 id="resolve-title">Mark as resolved</h2>
                 <button
-                  className="close-btn"
+                  type="button"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setShowResolveModal(false)}
                 >
-                  ✕
+                  Close
                 </button>
               </div>
               <div className="modal-body">
@@ -676,49 +664,54 @@ export default function ItemDetail() {
                 </p>
                 <div className="claim-info-box">
                   <ul>
-                    <li>Change the item status to "Resolved"</li>
+                    <li>Change the item status to resolved</li>
                     <li>Disable further claims on this item</li>
                     <li>Stop chat conversations related to this item</li>
                     <li>Mark the item as successfully reunited</li>
                   </ul>
                 </div>
-                <p style={{ marginTop: "1rem", fontWeight: 700 }}>
-                  This action cannot be undone easily.
-                </p>
+                <p className="modal-warning">This action cannot be undone easily.</p>
               </div>
-              <div className="modal-footer">
+              <div className="modal-actions">
                 <button
-                  className="btn-cancel"
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => setShowResolveModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn-submit"
+                  type="button"
+                  className="btn btn-found"
                   onClick={handleResolveItem}
-                  style={{ background: "var(--green)" }}
                 >
-                  Confirm Resolve
+                  Confirm resolve
                 </button>
               </div>
-            </div>
+            </section>
           </div>
         )}
 
-        {/* Delete Modal */}
         {showDeleteModal && (
           <div
-            className="modal-overlay"
+            className="modal-backdrop item-modal-backdrop"
             onClick={() => setShowDeleteModal(false)}
           >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>🗑️ Delete Item</h2>
+            <section
+              className="modal item-dialog"
+              onClick={(e) => e.stopPropagation()}
+              aria-modal="true"
+              role="dialog"
+              aria-labelledby="delete-title"
+            >
+              <div className="item-modal-header">
+                <h2 id="delete-title">Delete item</h2>
                 <button
-                  className="close-btn"
+                  type="button"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setShowDeleteModal(false)}
                 >
-                  ✕
+                  Close
                 </button>
               </div>
               <div className="modal-body">
@@ -733,99 +726,109 @@ export default function ItemDetail() {
                     <li>Cannot be undone</li>
                   </ul>
                 </div>
-                <p
-                  style={{
-                    marginTop: "1rem",
-                    fontWeight: 700,
-                    color: "var(--red)",
-                  }}
-                >
-                  This action is permanent and cannot be reversed!
+                <p className="modal-danger">
+                  This action is permanent and cannot be reversed.
                 </p>
               </div>
-              <div className="modal-footer">
+              <div className="modal-actions">
                 <button
-                  className="btn-cancel"
+                  type="button"
+                  className="btn btn-secondary"
                   onClick={() => setShowDeleteModal(false)}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn-submit"
+                  type="button"
+                  className="btn btn-danger"
                   onClick={handleDeleteItem}
-                  style={{ background: "var(--red)" }}
                 >
-                  Delete Permanently
+                  Delete permanently
                 </button>
               </div>
-            </div>
+            </section>
           </div>
         )}
 
-        {/* Image Modal (Full Screen) */}
         {showImageModal && (
           <div
             className="image-modal-overlay"
             onClick={() => setShowImageModal(false)}
           >
-            <button className="modal-close-btn">✕</button>
             <button
-              className="modal-nav-btn prev"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedImage((prev) =>
-                  prev > 0 ? prev - 1 : item.images.length - 1,
-                );
-              }}
+              type="button"
+              className="image-modal-close btn btn-secondary btn-sm"
+              onClick={() => setShowImageModal(false)}
             >
-              ‹
+              Close
             </button>
+            {imageCount > 1 && (
+              <button
+                type="button"
+                className="image-modal-nav prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImage((prev) =>
+                    prev > 0 ? prev - 1 : imageCount - 1,
+                  );
+                }}
+              >
+                Previous
+              </button>
+            )}
             <img
               src={
-                currentImage
-                  ? withApiBase(currentImage)
-                  : "/placeholder-image.svg"
+                currentImage ? withApiBase(currentImage) : "/placeholder-image.svg"
               }
               alt={item.title}
               className="modal-image"
               onClick={(e) => e.stopPropagation()}
             />
-            <button
-              className="modal-nav-btn next"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedImage((prev) =>
-                  prev < item.images.length - 1 ? prev + 1 : 0,
-                );
-              }}
-            >
-              ›
-            </button>
+            {imageCount > 1 && (
+              <button
+                type="button"
+                className="image-modal-nav next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImage((prev) =>
+                    prev < imageCount - 1 ? prev + 1 : 0,
+                  );
+                }}
+              >
+                Next
+              </button>
+            )}
             <div className="modal-image-counter">
-              {selectedImage + 1} / {item.images.length}
+              {imageCount > 0 ? `${selectedImage + 1} / ${imageCount}` : "0 / 0"}
             </div>
           </div>
         )}
 
-        {/* Contact Modal */}
         {showContactModal && (
           <div
-            className="modal-overlay"
+            className="modal-backdrop item-modal-backdrop"
             onClick={() => setShowContactModal(false)}
           >
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>💬 Contact {item.postedBy.username}</h2>
+            <section
+              className="modal item-dialog"
+              onClick={(e) => e.stopPropagation()}
+              aria-modal="true"
+              role="dialog"
+              aria-labelledby="contact-title"
+            >
+              <div className="item-modal-header">
+                <h2 id="contact-title">Contact {item.postedBy.username}</h2>
                 <button
-                  className="close-btn"
+                  type="button"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setShowContactModal(false)}
                 >
-                  ✕
+                  Close
                 </button>
               </div>
               <div className="modal-body">
                 <div className="contact-intro">
-                  <div className="poster-info">
+                  <div className="contact-poster">
                     {item.postedBy.profilePicture ? (
                       <img
                         src={
@@ -834,52 +837,48 @@ export default function ItemDetail() {
                             : withApiBase(item.postedBy.profilePicture)
                         }
                         alt={item.postedBy.username}
-                        className="poster-avatar"
                       />
                     ) : (
-                      <div className="poster-avatar-placeholder">
+                      <div className="contact-avatar-placeholder">
                         {item.postedBy.username.charAt(0).toUpperCase()}
                       </div>
                     )}
                     <div>
                       <strong>{item.postedBy.username}</strong>
-                      <div className="mini-trust-score">
-                        ⭐ {item.postedBy.trustScore}/100
-                      </div>
+                      <p>Trust score {item.postedBy.trustScore}/100</p>
                     </div>
                   </div>
                 </div>
                 <div className="contact-options">
                   {item.contactPreferences.email && (
                     <div className="contact-option">
-                      <span className="contact-icon">📧</span>
-                      <div className="contact-details">
+                      <div>
                         <strong>Email</strong>
                         <p>{item.postedBy.email}</p>
                         <a
                           href={`mailto:${item.postedBy.email}?subject=Regarding ${item.type} item: ${item.title}`}
-                          className="btn-contact-action"
+                          className="btn btn-secondary btn-sm"
                         >
-                          Send Email
+                          Send email
                         </a>
                       </div>
                     </div>
                   )}
                   {item.contactPreferences.message && (
                     <div className="contact-option">
-                      <span className="contact-icon">💬</span>
-                      <div className="contact-details">
-                        <strong>In-App Message</strong>
-                        <p>Send a secure message through the platform</p>
+                      <div>
+                        <strong>In-app message</strong>
+                        <p>Send a secure message through the platform.</p>
                         <button
-                          className="btn-contact-action"
+                          type="button"
+                          className="btn btn-secondary btn-sm"
                           onClick={() => {
                             router.push(
                               `/messages?to=${item.postedBy._id}&item=${itemId}`,
                             );
                           }}
                         >
-                          Send Message
+                          Send message
                         </button>
                       </div>
                     </div>
@@ -887,18 +886,16 @@ export default function ItemDetail() {
                   {!item.contactPreferences.email &&
                     !item.contactPreferences.message && (
                       <div className="no-contact-info">
-                        <p>
-                          ⚠️ The poster hasn't enabled any contact methods yet.
-                        </p>
+                        <p>The poster has not enabled contact methods yet.</p>
                         <p>Try bookmarking this item and check back later.</p>
                       </div>
                     )}
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         )}
       </div>
-    </>
+    </main>
   );
 }

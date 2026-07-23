@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
 import { API_ENDPOINTS, withApiBase } from "@/lib/config";
-import Navigation from "@/components/Navigation";
 import "./explore.css";
 
 interface Item {
@@ -213,76 +213,89 @@ export default function Explore() {
     return itemDate.toLocaleDateString();
   };
 
+  const hasActiveFilters =
+    filterType !== "all" ||
+    filterCategory !== "All Categories" ||
+    filterCity !== "All Cities" ||
+    filterStatus !== "all";
+
   return (
-    <>
-      <Navigation />
-      <div className="explore-container">
-        {/* Back Button */}
-        <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+    <main className="page explore-page">
+      <div className="page-wide">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm explore-back"
+          onClick={() => router.back()}
+        >
+          Back
         </button>
 
-        {/* Header */}
-        <div className="explore-header">
-          <div className="header-content">
-            <h1>🔍 Explore Lost & Found Items</h1>
-            <p>Discover items that have been lost or found in your area</p>
+        <header className="explore-hero">
+          <span className="eyebrow">Browse reports</span>
+          <div className="explore-hero-row">
+            <div>
+              <h1 className="display">Explore lost and found items</h1>
+              <p className="section-sub">
+                Search recent community reports, narrow by location, and open a
+                listing when something looks familiar.
+              </p>
+            </div>
+            <div className="explore-count surface" aria-live="polite">
+              <strong>{filteredItems.length}</strong>
+              <span>{filteredItems.length === 1 ? "item" : "items"} found</span>
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Search Bar */}
-        <div className="search-section">
-          <div className="search-bar">
-            <span className="search-icon">🔎</span>
+        <section className="surface explore-toolbar" aria-label="Search items">
+          <label className="field explore-search">
+            <span className="sr-only">Search items</span>
             <input
               type="text"
-              placeholder="Search items, categories, locations..."
+              placeholder="Search by item, category, or description"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            {searchTerm && (
-              <button
-                className="clear-search"
-                onClick={() => setSearchTerm("")}
-              >
-                ✕
-              </button>
-            )}
-          </div>
+          </label>
+          {searchTerm && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setSearchTerm("")}
+            >
+              Clear search
+            </button>
+          )}
           <button
-            className="filter-toggle"
+            type="button"
+            className="btn btn-secondary"
             onClick={() => setShowFilters(!showFilters)}
+            aria-expanded={showFilters}
           >
-            🎛️ Filters
-            {(filterType !== "all" ||
-              filterCategory !== "All Categories" ||
-              filterCity !== "All Cities" ||
-              filterStatus !== "all") && (
-              <span className="filter-badge">•</span>
-            )}
+            Filters
+            {hasActiveFilters && <span className="filter-dot" aria-hidden />}
           </button>
-        </div>
+        </section>
 
-        {/* Filters */}
         {showFilters && (
-          <div className="filters-section">
+          <section className="surface filters-panel" aria-label="Filter items">
             <div className="filters-grid">
-              {/* Type Filter */}
-              <div className="filter-group">
-                <label>Type</label>
+              <label className="field">
+                <span>Type</span>
                 <select
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as any)}
+                  onChange={(e) =>
+                    setFilterType(e.target.value as "all" | "lost" | "found")
+                  }
                 >
                   <option value="all">All Types</option>
                   <option value="lost">Lost</option>
                   <option value="found">Found</option>
                 </select>
-              </div>
+              </label>
 
-              {/* Category Filter */}
-              <div className="filter-group">
-                <label>Category</label>
+              <label className="field">
+                <span>Category</span>
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
@@ -293,11 +306,10 @@ export default function Explore() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
-              {/* City Filter */}
-              <div className="filter-group">
-                <label>City</label>
+              <label className="field">
+                <span>City</span>
                 <select
                   value={filterCity}
                   onChange={(e) => setFilterCity(e.target.value)}
@@ -308,11 +320,10 @@ export default function Explore() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
-              {/* Status Filter */}
-              <div className="filter-group">
-                <label>Status</label>
+              <label className="field">
+                <span>Status</span>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -321,11 +332,10 @@ export default function Explore() {
                   <option value="active">Active</option>
                   <option value="resolved">Resolved</option>
                 </select>
-              </div>
+              </label>
 
-              {/* Sort By */}
-              <div className="filter-group">
-                <label>Sort By</label>
+              <label className="field">
+                <span>Sort by</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -335,143 +345,164 @@ export default function Explore() {
                   <option value="views">Most Viewed</option>
                   <option value="reward">Highest Reward</option>
                 </select>
-              </div>
+              </label>
             </div>
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              Clear All Filters
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={clearFilters}
+            >
+              Clear all filters
             </button>
-          </div>
+          </section>
         )}
 
-        {/* Results Info */}
-        <div className="results-info">
-          <p>
-            {filteredItems.length}{" "}
-            {filteredItems.length === 1 ? "item" : "items"} found
-          </p>
-          <div className="quick-filters">
-            <button
-              className={`quick-filter ${filterType === "all" ? "active" : ""}`}
-              onClick={() => setFilterType("all")}
-            >
-              All
-            </button>
-            <button
-              className={`quick-filter ${filterType === "lost" ? "active" : ""}`}
-              onClick={() => setFilterType("lost")}
-            >
-              🔴 Lost
-            </button>
-            <button
-              className={`quick-filter ${filterType === "found" ? "active" : ""}`}
-              onClick={() => setFilterType("found")}
-            >
-              🟢 Found
-            </button>
-          </div>
-        </div>
-
-        {/* Items Grid */}
-        {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading items...</p>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📭</div>
-            <h3>No items found</h3>
-            <p>Try adjusting your filters or search terms</p>
-            <button onClick={clearFilters} className="clear-btn">
-              Clear Filters
-            </button>
-          </div>
-        ) : (
-          <div className="items-grid">
-            {filteredItems.map((item) => (
-              <div
-                key={item._id}
-                className={`item-card ${item.type}`}
-                onClick={() => handleCardClick(item._id)}
+        <section className="explore-results" aria-label="Item results">
+          <div className="results-header">
+            <p className="muted">
+              Showing {filteredItems.length} of {items.length} reports
+            </p>
+            <div className="quick-filters" aria-label="Quick type filters">
+              <button
+                type="button"
+                className={`btn btn-sm ${filterType === "all" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setFilterType("all")}
               >
-                {/* Image */}
-                <div className="card-image">
-                  <img
-                    src={
-                      item.images[0]
-                        ? withApiBase(item.images[0])
-                        : "/placeholder-image.svg"
-                    }
-                    alt={item.title}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/placeholder-image.svg";
-                    }}
-                  />
-                  <div className={`card-type-badge ${item.type}`}>
-                    {item.type === "lost" ? "🔴 Lost" : "🟢 Found"}
-                  </div>
-                  {item.reward && item.reward > 0 && (
-                    <div className="reward-badge">💰 Rs. {item.reward}</div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="card-content">
-                  <h3 className="card-title">{item.title}</h3>
-                  <p className="card-description">{item.description}</p>
-
-                  <div className="card-meta">
-                    <div className="meta-item">
-                      <span className="meta-icon">📂</span>
-                      <span>{item.category}</span>
-                    </div>
-                    <div className="meta-item">
-                      <span className="meta-icon">📍</span>
-                      <span>
-                        {item.location.area}, {item.location.city}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="card-footer">
-                    <div className="poster-info">
-                      <div className="poster-avatar">
-                        {item.postedBy?.profilePicture ? (
-                          <img
-                            src={
-                              item.postedBy.profilePicture.startsWith("http")
-                                ? item.postedBy.profilePicture
-                                : withApiBase(item.postedBy.profilePicture)
-                            }
-                            alt={item.postedBy.username || "User"}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        ) : (
-                          <span>👤</span>
-                        )}
-                      </div>
-                      <span className="poster-name">
-                        {item.postedBy?.username || "Unknown User"}
-                      </span>
-                    </div>
-                    <div className="card-stats">
-                      <span className="stat">👁️ {item.views}</span>
-                      <span className="stat time">
-                        {formatDate(item.createdAt)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                All
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${filterType === "lost" ? "btn-lost" : "btn-secondary"}`}
+                onClick={() => setFilterType("lost")}
+              >
+                Lost
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${filterType === "found" ? "btn-found" : "btn-secondary"}`}
+                onClick={() => setFilterType("found")}
+              >
+                Found
+              </button>
+            </div>
           </div>
-        )}
+
+          {loading ? (
+            <div className="surface loading-state" role="status">
+              <div className="spinner" aria-hidden />
+              <p>Loading items...</p>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="empty-state">
+              <h3>No items found</h3>
+              <p>Try adjusting your search or filters.</p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="btn btn-secondary"
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <div className="item-grid">
+              {filteredItems.map((item) => (
+                <article
+                  key={item._id}
+                  className="item-card explore-card"
+                  onClick={() => handleCardClick(item._id)}
+                >
+                  <div className="item-card-image">
+                    <img
+                      src={
+                        item.images[0]
+                          ? withApiBase(item.images[0])
+                          : "/placeholder-image.svg"
+                      }
+                      alt={item.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "/placeholder-image.svg";
+                      }}
+                    />
+                    <div className="explore-card-badges">
+                      <span
+                        className={`badge ${item.type === "lost" ? "badge-lost" : "badge-found"}`}
+                      >
+                        {item.type === "lost" ? "Lost" : "Found"}
+                      </span>
+                      {item.reward && item.reward > 0 && (
+                        <span className="badge badge-neutral">
+                          Reward Rs. {item.reward}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="item-card-body">
+                    <div className="explore-card-heading">
+                      <h2 className="item-card-title">{item.title}</h2>
+                      <span
+                        className={`badge ${item.status === "active" ? "badge-active" : "badge-resolved"}`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                    <p className="explore-card-description">
+                      {item.description}
+                    </p>
+
+                    <dl className="item-card-meta explore-card-meta">
+                      <div>
+                        <dt>Category</dt>
+                        <dd>{item.category}</dd>
+                      </div>
+                      <div>
+                        <dt>Location</dt>
+                        <dd>
+                          {item.location.area}, {item.location.city}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <footer className="explore-card-footer">
+                      <div className="poster-summary">
+                        <div className="poster-avatar" aria-hidden>
+                          {item.postedBy?.profilePicture ? (
+                            <img
+                              src={
+                                item.postedBy.profilePicture.startsWith("http")
+                                  ? item.postedBy.profilePicture
+                                  : withApiBase(item.postedBy.profilePicture)
+                              }
+                              alt=""
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <span>
+                              {item.postedBy?.username
+                                ?.charAt(0)
+                                .toUpperCase() || "U"}
+                            </span>
+                          )}
+                        </div>
+                        <span>{item.postedBy?.username || "Unknown User"}</span>
+                      </div>
+                      <div className="explore-card-stats">
+                        <span>{item.views} views</span>
+                        <span>{formatDate(item.createdAt)}</span>
+                      </div>
+                    </footer>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
-    </>
+    </main>
   );
 }

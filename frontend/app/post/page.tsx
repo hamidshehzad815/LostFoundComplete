@@ -7,16 +7,12 @@ export default function PostPage() {
   return (
     <Suspense
       fallback={
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          Loading...
-        </div>
+        <main className="page">
+          <div className="page-narrow empty-state" role="status">
+            <div className="spinner" aria-hidden />
+            <p>Loading post form...</p>
+          </div>
+        </main>
       }
     >
       <PostClient />

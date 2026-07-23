@@ -1,5 +1,41 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+
+type LatLngTuple = [number, number];
+
+interface LeafletPosition {
+  lat: number;
+  lng: number;
+}
+
+interface LeafletMarker {
+  setLatLng: (position: LatLngTuple) => void;
+  getLatLng: () => LeafletPosition;
+  on: (event: "dragend", handler: (event: { target: LeafletMarker }) => void) => void;
+  addTo: (map: LeafletMap) => LeafletMarker;
+}
+
+interface LeafletMap {
+  remove: () => void;
+  invalidateSize: () => void;
+  setView: (position: LatLngTuple, zoom: number) => void;
+  on: (event: "click", handler: (event: { latlng: LeafletPosition }) => void) => void;
+}
+
+interface LeafletApi {
+  map: (
+    element: HTMLElement,
+    options: { center: LatLngTuple; zoom: number; zoomControl: boolean },
+  ) => LeafletMap;
+  tileLayer: (
+    url: string,
+    options: { attribution: string; maxZoom: number },
+  ) => { addTo: (map: LeafletMap) => void };
+  marker: (
+    position: LatLngTuple,
+    options: { draggable: boolean },
+  ) => LeafletMarker;
+}
 
 interface MapSelectorProps {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -13,9 +49,72 @@ export default function MapSelector({
   initialLng,
 }: MapSelectorProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const [isReady, setIsReady] = useState(false);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<LeafletMarker | null>(null);
+  const initialPositionRef = useRef<LatLngTuple>([initialLat, initialLng]);
+  const onLocationSelectRef = useRef(onLocationSelect);
+
+  useEffect(() => {
+    initialPositionRef.current = [initialLat, initialLng];
+    onLocationSelectRef.current = onLocationSelect;
+  }, [initialLat, initialLng, onLocationSelect]);
+
+  const initializeMap = useCallback(() => {
+    if (!mapRef.current) return;
+
+    const leaflet = (window as Window & { L?: LeafletApi }).L;
+    if (!leaflet) return;
+
+    if (mapInstanceRef.current) {
+      return;
+    }
+
+    try {
+      if (mapRef.current) {
+        mapRef.current.innerHTML = "";
+        mapRef.current.className = "";
+      }
+
+      const initialPosition = initialPositionRef.current;
+      const newMap = leaflet.map(mapRef.current, {
+        center: initialPosition,
+        zoom: 13,
+        zoomControl: true,
+      });
+
+      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(newMap);
+
+      const newMarker = leaflet.marker(initialPosition, {
+        draggable: true,
+      }).addTo(newMap);
+
+      newMarker.on("dragend", (event) => {
+        const position = event.target.getLatLng();
+        onLocationSelectRef.current(position.lat, position.lng);
+      });
+
+      newMap.on("click", (event) => {
+        const { lat, lng } = event.latlng;
+        newMarker.setLatLng([lat, lng]);
+        onLocationSelectRef.current(lat, lng);
+      });
+
+      mapInstanceRef.current = newMap;
+      markerRef.current = newMarker;
+
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 100);
+    } catch (error) {
+      console.error("Error initializing map:", error);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -28,8 +127,8 @@ export default function MapSelector({
         document.head.appendChild(link);
       }
 
-      const L = (window as any).L;
-      if (L) {
+      const leaflet = (window as Window & { L?: LeafletApi }).L;
+      if (leaflet) {
         if (isMounted) {
           initializeMap();
         }
@@ -66,84 +165,36 @@ export default function MapSelector({
         }
       }
     };
-  }, []);
-
-  const initializeMap = () => {
-    if (!mapRef.current) return;
-
-    const L = (window as any).L;
-    if (!L) return;
-
-    if (mapInstanceRef.current) {
-      return;
-    }
-
-    try {
-      if (mapRef.current) {
-        mapRef.current.innerHTML = "";
-        mapRef.current.className = "";
-      }
-
-      const newMap = L.map(mapRef.current, {
-        center: [initialLat, initialLng],
-        zoom: 13,
-        zoomControl: true,
-      });
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(newMap);
-
-      const newMarker = L.marker([initialLat, initialLng], {
-        draggable: true,
-      }).addTo(newMap);
-
-      newMarker.on("dragend", function (e: any) {
-        const position = e.target.getLatLng();
-        onLocationSelect(position.lat, position.lng);
-      });
-
-      newMap.on("click", function (e: any) {
-        const { lat, lng } = e.latlng;
-        newMarker.setLatLng([lat, lng]);
-        onLocationSelect(lat, lng);
-      });
-
-      mapInstanceRef.current = newMap;
-      markerRef.current = newMarker;
-      setIsReady(true);
-
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
-      }, 100);
-    } catch (error) {
-      console.error("Error initializing map:", error);
-    }
-  };
+  }, [initializeMap]);
 
   useEffect(() => {
-    if (isReady && mapInstanceRef.current && markerRef.current) {
+    if (mapInstanceRef.current && markerRef.current) {
       if (initialLat !== 31.5204 || initialLng !== 74.3587) {
         markerRef.current.setLatLng([initialLat, initialLng]);
         mapInstanceRef.current.setView([initialLat, initialLng], 13);
       }
     }
-  }, [initialLat, initialLng, isReady]);
+  }, [initialLat, initialLng]);
 
   return (
     <div
-      ref={mapRef}
       style={{
         width: "100%",
-        height: "400px",
-        borderRadius: "12px",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
         overflow: "hidden",
-        background: "#f8fafc",
+        background: "var(--surface)",
+        boxShadow: "var(--shadow-sm)",
       }}
-    />
+    >
+      <div
+        ref={mapRef}
+        style={{
+          width: "100%",
+          height: "400px",
+          background: "#eef2f5",
+        }}
+      />
+    </div>
   );
 }

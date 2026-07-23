@@ -3,14 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuthToken, isAuthenticated } from "@/lib/auth";
-import Navigation from "@/components/Navigation";
 import dynamic from "next/dynamic";
 import { API_ENDPOINTS } from "@/lib/config";
 import "./post.css";
 
 const MapSelector = dynamic(() => import("@/components/MapSelector"), {
   ssr: false,
-  loading: () => <div className="map-loading">Loading map...</div>,
+  loading: () => (
+    <div className="map-loading" role="status">
+      <div className="spinner" aria-hidden />
+      <span>Loading map...</span>
+    </div>
+  ),
 });
 
 const CATEGORIES = [
@@ -430,8 +434,8 @@ export default function PostClient() {
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to post item");
     } finally {
       setLoading(false);
     }
@@ -439,49 +443,60 @@ export default function PostClient() {
 
   if (success) {
     return (
-      <>
-        <Navigation />
-        <div className="success-screen">
-          <div className="success-content">
-            <div className="success-icon">✅</div>
-            <h1>Item Posted Successfully!</h1>
-            <p>Redirecting to dashboard...</p>
-          </div>
+      <main className="page post-page success-screen">
+        <div className="success-content surface">
+          <span className="eyebrow">Posted</span>
+          <h1 className="display">Item posted successfully</h1>
+          <p>Redirecting to dashboard...</p>
         </div>
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Navigation />
+    <main className="page post-page">
       <div className="post-container">
-        <button className="back-btn" onClick={() => router.back()}>
-          ← Back
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm post-back"
+          onClick={() => router.back()}
+        >
+          Back
         </button>
         <div className="post-header">
-          <h1>Post {itemType === "lost" ? "Lost" : "Found"} Item</h1>
+          <div>
+            <span className="eyebrow">Create report</span>
+            <h1 className="display">
+              Post {itemType === "lost" ? "lost" : "found"} item
+            </h1>
+            <p className="section-sub">
+              Add the details people need to identify the item and contact you
+              safely.
+            </p>
+          </div>
           <div className="type-toggle">
             <button
-              className={`toggle-btn ${itemType === "lost" ? "active" : ""}`}
+              type="button"
+              className={`btn btn-sm toggle-btn ${itemType === "lost" ? "btn-lost active" : "btn-secondary"}`}
               onClick={() => setItemType("lost")}
             >
-              🔍 Lost
+              Lost
             </button>
             <button
-              className={`toggle-btn ${itemType === "found" ? "active" : ""}`}
+              type="button"
+              className={`btn btn-sm toggle-btn ${itemType === "found" ? "btn-found active" : "btn-secondary"}`}
               onClick={() => setItemType("found")}
             >
-              🎁 Found
+              Found
             </button>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="post-form">
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className="alert alert-error">{error}</div>}
 
           <div className="form-section">
-            <h3>📝 Basic Information</h3>
+            <h2>Basic information</h2>
 
             <div className="form-group">
               <label htmlFor="title">Title *</label>
@@ -564,14 +579,14 @@ export default function PostClient() {
 
           <div className="form-section">
             <div className="location-header">
-              <h3>📍 Location</h3>
+              <h2>Location</h2>
               <button
                 type="button"
-                className="use-location-btn"
+                className="btn btn-secondary btn-sm use-location-btn"
                 onClick={handleUseMyLocation}
                 disabled={locationLoading}
               >
-                {locationLoading ? "Getting Location..." : "📍 Use My Location"}
+                {locationLoading ? "Getting location..." : "Use my location"}
               </button>
             </div>
 
@@ -627,14 +642,14 @@ export default function PostClient() {
             <div className="map-selection">
               <button
                 type="button"
-                className="select-map-btn"
+                className="btn btn-secondary select-map-btn"
                 onClick={() => setShowMap(!showMap)}
               >
-                🗺️ {showMap ? "Hide Map" : "Select Location on Map"}
+                {showMap ? "Hide map" : "Select location on map"}
               </button>
               {formData.latitude && formData.longitude && (
                 <div className="coordinates-display">
-                  📍 Coordinates: {parseFloat(formData.latitude).toFixed(6)},{" "}
+                  Coordinates: {parseFloat(formData.latitude).toFixed(6)},{" "}
                   {parseFloat(formData.longitude).toFixed(6)}
                 </div>
               )}
@@ -661,7 +676,7 @@ export default function PostClient() {
           </div>
 
           <div className="form-section">
-            <h3>📷 Images (Up to 5)</h3>
+            <h2>Images</h2>
 
             <div className="image-upload-area">
               <input
@@ -677,7 +692,6 @@ export default function PostClient() {
                 htmlFor="images"
                 className={`upload-label ${images.length >= 5 ? "disabled" : ""}`}
               >
-                <div className="upload-icon">📸</div>
                 <p>Click to upload images</p>
                 <span>{images.length}/5 images</span>
               </label>
@@ -693,7 +707,7 @@ export default function PostClient() {
                       className="remove-image"
                       onClick={() => removeImage(index)}
                     >
-                      ×
+                      x
                     </button>
                   </div>
                 ))}
@@ -702,7 +716,7 @@ export default function PostClient() {
           </div>
 
           <div className="form-section">
-            <h3>💰 Reward & Tags</h3>
+            <h2>Reward and tags</h2>
 
             <div className="form-group">
               <label htmlFor="rewardAmount">Reward Amount (PKR)</label>
@@ -733,12 +747,16 @@ export default function PostClient() {
           <div className="form-actions">
             <button
               type="button"
-              className="cancel-btn"
+              className="btn btn-secondary cancel-btn"
               onClick={() => router.back()}
             >
               Cancel
             </button>
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary submit-btn"
+              disabled={loading}
+            >
               {loading
                 ? "Posting..."
                 : `Post ${itemType === "lost" ? "Lost" : "Found"} Item`}
@@ -746,6 +764,6 @@ export default function PostClient() {
           </div>
         </form>
       </div>
-    </>
+    </main>
   );
 }
